@@ -3,6 +3,11 @@
 - **Owner:**
 - **Started:**
 - **Status:** active
+- **Paper:** Paper 13 — "Trustworthy Agricultural Intelligence Under
+  Unequal Data Availability" (promoted 2026-09-12 from a sub-topic of
+  Paper 10/Human-AI Decision Support into its own dedicated paper — same
+  experiment, no new work, just its own paper bucket per the 15-paper
+  publication roadmap revision).
 - **Source:** Concept paper "Agentic Agricultural Intelligence..." (Masaba,
   Makerere University) — Section 6 ("Responsible and Trustworthy AI"):
   "A system that performs well for data-rich regions but poorly for
