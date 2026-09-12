@@ -33,11 +33,19 @@ not assume away.
 Forecast accuracy (MAPE), recommendation confidence
 (`RecommendationEngine`'s real `confidence` field), and evidence
 sufficiency (this session's new `evidence_sufficient` gate) will all be
-measurably worse, on average, for SS/SO/CD/BI (thinner real data) than
-for UG/KE/TZ/RW (richer real data) — and the gap will be largest
-specifically for `evidence_sufficient`, since `supporting_signals` counts
-real pulse signals, which are themselves downstream of the same uneven
-data coverage.
+measurably worse, on average, for UG/SS/SO/CD (thinner real data — zero
+real FAOSTAT PP rows per `project_faostat_prices`, falling back to
+`BASE_PRICES_USD`) than for KE/TZ/RW/BI (richer real data — 574-1284
+real FAOSTAT PP rows each) — and the gap will be largest specifically
+for `evidence_sufficient`, since `supporting_signals` counts real pulse
+signals, which are themselves downstream of the same uneven data
+coverage.
+
+*Correction 2026-09-13: an earlier draft of this hypothesis swapped UG
+and BI into the wrong groups, contradicting this file's own Objective
+section above (which had the grouping right). Fixed before running the
+audit — the FAOSTAT sync results, not intuition, are the source of
+truth for which group a country belongs to.*
 
 ## Core Variables
 

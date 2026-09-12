@@ -18,10 +18,12 @@ SUB_NATIONAL/Prophet, NATIONAL/ensemble) are each trained fresh, per
 model fit happens inside a single country/commodity's `PipelineContext`,
 with no shared or pretrained parameters across countries). For a
 data-sparse country (e.g. SS, with far fewer real historical price
-points than UG or KE), this means the model has less real data to learn
+points than KE or TZ), this means the model has less real data to learn
 from and nothing borrowed from richer neighbors. This experiment tests
 whether transferring structure learned from data-rich EAC markets
-(UG/KE/TZ/RW) improves forecasts for data-sparse ones (SS/SO/CD/BI).
+(KE/TZ/RW/BI — real FAOSTAT PP coverage per `project_faostat_prices`)
+improves forecasts for data-sparse ones (UG/SS/SO/CD — zero real
+FAOSTAT coverage, falling back to `BASE_PRICES_USD`).
 
 ## Hypothesis
 
@@ -39,7 +41,7 @@ multiple EAC countries, where price dynamics are plausibly correlated
   MAE/RMSE/MAPE protocol), so results are comparable.
 - **Varied:** training regime — (a) current per-country from-scratch
   training (control), (b) pooled-then-fine-tuned or transfer-learned
-  variant, source countries = the data-rich set (UG/KE/TZ/RW per
+  variant, source countries = the data-rich set (KE/TZ/RW/BI per
   `regional-equity-audit`'s own real data-availability split).
 - **Real data:** real historical prices already available to
   `services/forecasting/price.py` for all countries — no synthetic data.
@@ -47,7 +49,7 @@ multiple EAC countries, where price dynamics are plausibly correlated
 ## Success Metrics
 
 - Decided before looking at results: transfer learning must improve
-  MAPE for at least 2 of the 4 data-sparse countries (SS/SO/CD/BI) by a
+  MAPE for at least 2 of the 4 data-sparse countries (UG/SS/SO/CD) by a
   real, measurable margin over the from-scratch baseline to justify the
   added training complexity.
 - If it doesn't help (e.g. EAC markets turn out to be less correlated

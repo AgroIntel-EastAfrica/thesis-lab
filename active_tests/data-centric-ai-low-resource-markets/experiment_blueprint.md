@@ -23,9 +23,11 @@ tradeoff AgroIntel has never explicitly measured.
 
 ## Hypothesis
 
-For the specific case of data-sparse countries (SS/SO/CD/BI), a
-real improvement in the reliability of upstream data (e.g. actually
-resolving vs. falling back to `BASE_PRICES_USD`) will reduce forecast
+For the specific case of data-sparse countries (UG/SS/SO/CD — zero real
+FAOSTAT PP rows per `project_faostat_prices`, corrected 2026-09-13 from
+an earlier draft that had this swapped with the data-rich KE/TZ/RW/BI
+group), a real improvement in the reliability of upstream data (e.g.
+actually resolving vs. falling back to `BASE_PRICES_USD`) will reduce forecast
 MAPE by more than swapping the NATIONAL-layer ensemble weights or model
 family would — i.e. the ceiling on forecast quality for these countries
 is currently set by data availability, not model choice, and no amount
