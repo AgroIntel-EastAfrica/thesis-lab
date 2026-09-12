@@ -54,16 +54,26 @@ faith.
   actionable finding that the hand-set confidence values need to become
   data-derived rather than constants.
 - **Known real blocker, confirmed via a live, read-only production query
-  on 2026-09-11**: `forecast_evaluations` currently has 0 rows in
-  production. This experiment cannot produce a real result until the
-  scheduled forecasting workers actually run against production and
-  accumulate rows — which is itself gated on the open "confirm cloud
-  deployment status" item in `product/PRODUCTION_AUDIT.md`. Document that
-  blocker honestly in Results rather than fabricating a calibration
-  number from synthetic data and presenting it as real.
+  on 2026-09-11, re-confirmed 2026-09-13**: `forecast_evaluations`
+  currently has 0 rows in production (both checks: `total rows: 0`,
+  `pending (actual_price null): 0` — the table isn't even accumulating
+  *unevaluated* forecasts, meaning `update_price_forecasts` itself has
+  never successfully written a row here, not just that
+  `evaluate_forecast_accuracy` hasn't caught up yet). This experiment
+  cannot produce a real result until the scheduled forecasting workers
+  actually run against production and accumulate rows — which is itself
+  gated on the open "confirm cloud deployment status" item in
+  `product/PRODUCTION_AUDIT.md`. Document that blocker honestly in
+  Results rather than fabricating a calibration number from synthetic
+  data and presenting it as real.
 
 ## Results
 
 *Not yet run — blocked on real production data existing (see Success
-Metrics). Revisit once `forecast_evaluations` has accumulated rows with
-resolved `actual_price` values.*
+Metrics). Two independent checks (2026-09-11, 2026-09-13) both found
+zero rows, meaning this is a persistent operational gap (the worker
+that would populate this table has never run against this database),
+not a timing issue that will resolve itself shortly. Revisit once
+`update_price_forecasts` has actually executed against production and
+`forecast_evaluations` has accumulated rows with resolved
+`actual_price` values.*

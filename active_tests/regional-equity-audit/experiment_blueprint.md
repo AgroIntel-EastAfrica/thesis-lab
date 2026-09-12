@@ -70,4 +70,59 @@ truth for which group a country belongs to.*
 
 ## Results
 
-*Not yet run.*
+**Run 2026-09-13** via `thesis-lab/active_tests/regional-equity-audit/scripts/run_audit.py`
+(real, read-only — no writes). Two parts, one blocked, one real:
+
+**Forecast accuracy (MAPE) — blocked, not just "not yet run":**
+`forecast_evaluations` has 0 rows for all 8 countries (confirmed
+independently by `forecast-confidence-calibration`'s own audit, same
+finding, same date). Worse than a timing gap: even once populated, a
+fair MAPE comparison for UG/SS/SO/CD may not be *possible* with current
+data sources — `get_daily_price` for these countries walks from a
+`BASE_PRICES_USD` synthetic anchor (no real FAOSTAT/EATTA/EAX/IMF price
+data reaches them), so "actual_price" for a data-sparse country isn't a
+real market observation to forecast against — it's a formula-generated
+value. That itself is a real, reportable finding about the depth of the
+equity gap: it's severe enough that even *auditing* it accurately is
+hard for the affected countries.
+
+**RecommendationEngine (confidence, evidence_sufficient, supporting_signals) — real, live comparison:**
+
+| Country | n_recs | avg_confidence | evidence_sufficient_rate | avg_supporting_signals |
+|---|---|---|---|---|
+| KE (rich) | 21 | 84.05 | 0.286 | 1.62 |
+| TZ (rich) | 24 | 85.42 | 0.250 | 1.54 |
+| RW (rich) | 13 | 77.31 | 0.462 | 2.00 |
+| BI (rich) | 17 | 81.47 | 0.353 | 1.76 |
+| UG (sparse) | 24 | 85.42 | 0.250 | 1.54 |
+| SS (sparse) | 16 | 80.63 | 0.375 | 1.81 |
+| SO (sparse) | 11 | 74.09 | 0.545 | 2.18 |
+| CD (sparse) | 18 | 82.22 | 0.333 | 1.72 |
+| **data-rich avg** | | **82.06** | **0.338** | **1.73** |
+| **data-sparse avg** | | **80.59** | **0.376** | **1.81** |
+
+**Hypothesis only partially confirmed, and weakly:**
+- `avg_confidence`: data-rich is higher by ~1.5 points (82.06 vs 80.59) —
+  in the hypothesized direction, but a small gap relative to the
+  per-country spread (74-85).
+- `evidence_sufficient_rate` and `avg_supporting_signals`: **both
+  reversed** — data-sparse countries show a *higher* rate/average than
+  data-rich ones, the opposite of the hypothesis.
+
+**Honest interpretation:** `RecommendationEngine`'s pulse-signal layer
+(`IntelligencePulseService`, `ArbitrageRadarService`, etc.) draws on
+real-time signals (news, health scores, arbitrage spreads) that aren't
+the same data source distinction driving the FAOSTAT price-coverage
+gap — so this layer doesn't inherit that specific gap the way price
+forecasting would. The equity concern the concept paper raises is real
+at the *price/forecast* layer (confirmed structurally above, even
+though it can't be measured numerically yet) but is **not confirmed** at
+the *recommendation* layer with current data. Don't extrapolate one
+finding to the other — they measure different things, and this run
+shows they disagree.
+
+**Next step**: this experiment can be considered concluded for its
+`RecommendationEngine` half (real result: hypothesis not confirmed,
+weakly reversed on 2 of 3 metrics). Its MAPE half stays open, blocked on
+the same operational gap `forecast-confidence-calibration` is blocked
+on.
