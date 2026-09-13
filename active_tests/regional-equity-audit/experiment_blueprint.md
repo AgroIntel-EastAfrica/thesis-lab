@@ -119,6 +119,43 @@ apples-to-oranges as long as the data-sparse side's ground truth is
 synthetic, and any paper using this result must state that caveat
 explicitly rather than present the reversal as good news.
 
+**Attempted a real fix for this caveat, 2026-09-13 — investigated,
+partially resolved, one path stays genuinely blocked:**
+
+- **`price_model.py`'s real priority chain** (`FAOSTAT → EATTA → EAX →
+  IMF PCPS → Selina Wamucii → WFP DataBridges → BASE_PRICES_USD`) already
+  has *two* real sources beyond FAOSTAT that explicitly target exactly
+  this gap — checked both rather than assuming FAOSTAT is the only real
+  option:
+  - **Selina Wamucii** (`services/market/selina_wamucii_prices.py`): a
+    real, credential-free scraper covering all 8 countries. Ran it live
+    — found and fixed a genuine bug: its price-extraction regex silently
+    fell back to grabbing the first stray 2-5 digit number on the page
+    when the primary pattern didn't match, which was caching `2026.0` as
+    the "price" for every commodity in every country (a copyright/date
+    year, not a price). Root cause: selinawamucii.com's
+    `/insights/prices/<country>/<commodity>/` pages no longer show a
+    per-unit price at all — they now show aggregate national *export
+    value* ("Uganda supplied maize worth 52.72m USD" - a yearly total).
+    The site's content model changed since this integration was built;
+    no regex fix can recover a per-unit price from a page that no longer
+    has one. Removed the fallback so it now honestly returns "no data"
+    instead of a fabricated number — a real correctness fix, but it
+    does **not** close the data gap; Selina Wamucii cannot serve as a
+    real price source for these countries as currently structured.
+  - **WFP DataBridges** (`services/market/wfp_prices.py`): already coded
+    and wired into the priority chain, and WFP explicitly tracks market
+    prices in food-insecure/humanitarian-crisis contexts — a strong real
+    candidate for exactly SS/SO. **Genuinely blocked**: `WFP_CLIENT_ID`/
+    `WFP_CLIENT_SECRET` were never registered (only placeholders exist in
+    `.env.example`) — registration is a human, external step
+    (`wfp.economicanalysis@wfp.org`), not something fixable in code.
+- **Net effect**: the MAPE-comparison caveat above still holds for
+  UG/SS/SO/CD — no additional real market-data source became available
+  today. The honest path to closing this gap for real is registering for
+  WFP DataBridges credentials; that's a project-owner action item, not a
+  coding one.
+
 **RecommendationEngine (confidence, evidence_sufficient, supporting_signals) — real, live comparison:**
 
 Two live runs, hours apart (real-time pulse signals shift between calls,
