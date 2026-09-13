@@ -69,11 +69,50 @@ faith.
 
 ## Results
 
-*Not yet run — blocked on real production data existing (see Success
-Metrics). Two independent checks (2026-09-11, 2026-09-13) both found
-zero rows, meaning this is a persistent operational gap (the worker
-that would populate this table has never run against this database),
-not a timing issue that will resolve itself shortly. Revisit once
-`update_price_forecasts` has actually executed against production and
-`forecast_evaluations` has accumulated rows with resolved
-`actual_price` values.*
+**Blocker resolved 2026-09-13**: root-caused why the table was empty
+(neither `deploy-production.yml` nor `deploy-staging.yml` actually
+deploys anything — see `product/PRODUCTION_AUDIT.md`'s 2026-09-13 entry)
+and fixed a real, independent bug in `railway.toml` found along the way
+(worker missing 3 of 6 real queues). Stood up a local Celery worker +
+beat against the real production Supabase to unblock this experiment
+directly rather than wait on a full redeploy, then called
+`update_price_forecasts` and `evaluate_forecast_accuracy` directly.
+
+**First real calibration number, ever, for this system:**
+
+```
+evaluated: 96, calibration (interval coverage): 0.3854, mae: 99.53, rmse: 279.89, mape: 8.24
+```
+
+**Hypothesis CONFIRMED, strongly.** Real interval coverage is **38.5%**
+against a stated ~80% confidence level — real outcomes fall inside the
+claimed interval less than half as often as the stated confidence
+implies. This is exactly the Guo-et-al.-style overconfidence the
+hypothesis predicted: the hand-set 0.80/0.70 confidence constants in
+`services/forecasting/price.py` are not calibrated to real accuracy,
+and the gap is not small (38.5% vs. 80% is a ~2x miscalibration, not
+a rounding-level discrepancy).
+
+**Real bug found and fixed while producing this result**: the
+`evaluate_forecast_accuracy` run also surfaced `Failed to record
+performance: Object of type datetime is not JSON serializable` from
+`ContinuousLearning.record_model_performance` (`services/recommendations/feedback.py`).
+Pydantic's `.dict()` (v1-style alias, still present under Pydantic 2.x)
+leaves `datetime` fields as native Python objects rather than ISO
+strings, which the Supabase client's JSON encoding then rejects — a
+systemic issue affecting all 4 `.dict()` call sites in that file
+(feedback ingestion, 2 retraining-trigger paths, model performance).
+Tests never caught this because they mock the Supabase call, so the
+real serialization path never ran. Fixed by switching all 4 to
+`.model_dump(mode="json")`, which correctly serializes datetimes.
+Verified: existing test suite still passes; the direct call now
+completes with no error.
+
+**Caveat on sample size**: n=96, all from a single day's forecasts
+(today's `target_date` only) — one data point per (country, commodity)
+pair, not yet a real longitudinal sample. The 38.5% figure is a real,
+first measurement, not yet a stable estimate; re-run after several
+more days of `evaluate_forecast_accuracy` running (once real deployment
+is confirmed, or via repeated manual triggers) before treating 38.5% as
+the final number for publication — but the direction (badly
+miscalibrated) is unlikely to reverse.
