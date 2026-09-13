@@ -187,9 +187,32 @@ real, live data as a side effect of the test.
 **Real, honest conclusion for this thread**: the equity gap this
 experiment set out to check for is not a measurement artifact or an
 auth-configuration oversight — it is a genuine absence of data in FAO's
-own dataset for these 4 countries. WFP DataBridges remains the only
-identified real candidate to close it, and that remains blocked on
-registration this session did not have the ability to complete.
+own dataset for these 4 countries.
+
+**A 4th real source checked, 2026-09-13, same day — UN Comtrade
+(international trade flows, `clients/comtrade.py`)**: not previously
+wired into `price_model.py`'s chain at all. Investigated as an
+alternative real signal (import/export trade value, a different kind
+of data than domestic producer prices). The project owner's existing
+`COMTRADE_API_KEY` was rejected (401) on first check; regenerated the
+key via the UN Comtrade developer portal, which resolved the auth
+error — but the very next live call hit `403 Out of call volume quota`
+(free-tier daily quota already exhausted, ~5h to replenish). So: the
+credential itself is now confirmed genuinely valid, but real data
+coverage for SS/SO specifically has **not yet been confirmed either
+way** — the quota wall was hit before a real trade-flow response came
+back. Revisit once the quota resets rather than assume either outcome.
+
+**Status of all 4 real sources checked for UG/SS/SO/CD:**
+1. FAOSTAT — confirmed, definitively, zero real rows (see above).
+2. Selina Wamucii — site's content model changed, no per-unit price
+   recoverable regardless of credentials.
+3. WFP DataBridges — blocked on registration (external, human step).
+4. UN Comtrade — credential now valid, real coverage unconfirmed
+   pending quota reset.
+
+WFP and (pending its quota reset) Comtrade remain the only two real,
+unresolved candidates to close this gap.
 
 **RecommendationEngine (confidence, evidence_sufficient, supporting_signals) — real, live comparison:**
 
