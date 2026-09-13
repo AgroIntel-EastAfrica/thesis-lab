@@ -150,11 +150,46 @@ partially resolved, one path stays genuinely blocked:**
     `WFP_CLIENT_SECRET` were never registered (only placeholders exist in
     `.env.example`) — registration is a human, external step
     (`wfp.economicanalysis@wfp.org`), not something fixable in code.
-- **Net effect**: the MAPE-comparison caveat above still holds for
-  UG/SS/SO/CD — no additional real market-data source became available
-  today. The honest path to closing this gap for real is registering for
-  WFP DataBridges credentials; that's a project-owner action item, not a
-  coding one.
+- **Net effect (before the credential test below)**: the MAPE-comparison
+  caveat above still holds for UG/SS/SO/CD — no additional real
+  market-data source became available today. The honest path to closing
+  this gap for real is registering for WFP DataBridges credentials;
+  that's a project-owner action item, not a coding one.
+
+**Definitive live re-test, 2026-09-13, same day, with a real FAOSTAT
+access token**: the project owner registered a free FAOSTAT account and
+obtained a real, live Personal Access Token from FAO's own API Developer
+Portal (`faostatservices.fao.org`), authenticated as `jericho555@yahoo.com`.
+Used it to call the real PP (Producer Prices) endpoint directly for all
+8 EAC countries via `sync_all_eac_countries` — not a cached/stale check,
+a live, authenticated call made today:
+
+| Country | Real rows returned | Synced (this run) |
+|---|---|---|
+| KE (rich) | 1,284 | 27 |
+| RW (rich) | 824 | 21 |
+| BI (rich) | 574 | 18 |
+| TZ (rich) | 274 | 20 |
+| UG (sparse) | **0** | 0 |
+| SS (sparse) | **0** | 0 |
+| SO (sparse) | **0** | 0 |
+| CD (sparse) | **0** | 0 |
+
+This **settles the question definitively**: it was never an
+authentication wall hiding real data — FAOSTAT's own database has zero
+Producer Price records for UG/SS/SO/CD, full stop, confirmed live with
+valid credentials. The counts for KE/TZ/RW/BI exactly match the
+2026-07-26 memory record, confirming FAO's real coverage has been
+stable for ~2 months, not a fluke of that one earlier sync. The
+data-rich countries' Redis price cache has been refreshed with this
+real, live data as a side effect of the test.
+
+**Real, honest conclusion for this thread**: the equity gap this
+experiment set out to check for is not a measurement artifact or an
+auth-configuration oversight — it is a genuine absence of data in FAO's
+own dataset for these 4 countries. WFP DataBridges remains the only
+identified real candidate to close it, and that remains blocked on
+registration this session did not have the ability to complete.
 
 **RecommendationEngine (confidence, evidence_sufficient, supporting_signals) — real, live comparison:**
 
