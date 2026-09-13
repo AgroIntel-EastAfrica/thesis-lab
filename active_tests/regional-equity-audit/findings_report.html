@@ -1,0 +1,621 @@
+<title>Paper 14 Findings</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    color-scheme: light;
+    --surface:        #fbf9f4;
+    --surface-raised:  #ffffff;
+    --surface-sunken:  #f2ede2;
+    --border:          #ddd4c2;
+    --border-strong:   #c7bba3;
+    --text-primary:    #1f1b16;
+    --text-secondary:  #6b6155;
+    --text-tertiary:   #948a7a;
+    --rich:            #eb6834;
+    --rich-soft:       #f9ded0;
+    --sparse:          #2a78d6;
+    --sparse-soft:     #d9e7fa;
+    --status-warning:  #b8760a;
+    --status-warning-soft: #f6e6c8;
+    --status-critical: #c23b34;
+    --status-good:     #1a8f5c;
+    --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --font-body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface:         #211d18;
+      --surface-raised:  #2a2520;
+      --surface-sunken:  #191611;
+      --border:          #453e33;
+      --border-strong:   #5a5245;
+      --text-primary:    #f5f1e9;
+      --text-secondary:  #b8afa0;
+      --text-tertiary:   #8c8272;
+      --rich:            #d95926;
+      --rich-soft:       #3a2a1e;
+      --sparse:          #3987e5;
+      --sparse-soft:     #1c2c3f;
+      --status-warning:  #d99a2b;
+      --status-warning-soft: #3d3218;
+      --status-critical: #e0665e;
+      --status-good:     #3fb586;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface:         #211d18;
+    --surface-raised:  #2a2520;
+    --surface-sunken:  #191611;
+    --border:          #453e33;
+    --border-strong:   #5a5245;
+    --text-primary:    #f5f1e9;
+    --text-secondary:  #b8afa0;
+    --text-tertiary:   #8c8272;
+    --rich:            #d95926;
+    --rich-soft:       #3a2a1e;
+    --sparse:          #3987e5;
+    --sparse-soft:     #1c2c3f;
+    --status-warning:  #d99a2b;
+    --status-warning-soft: #3d3218;
+    --status-critical: #e0665e;
+    --status-good:     #3fb586;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0 20px;
+  }
+  .page {
+    max-width: 940px;
+    margin: 0 auto;
+    padding-block: 48px 80px;
+  }
+  .prose { max-width: 700px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; color: var(--text-primary); }
+  h1 { font-size: clamp(1.7rem, 4vw, 2.35rem); line-height: 1.2; margin: 0 0 8px; font-weight: 700; }
+  h2 { font-size: 1.5rem; margin: 0 0 6px; }
+  h3 { font-size: 1.05rem; margin: 0 0 4px; font-weight: 600; }
+  p { margin: 0 0 14px; }
+  a { color: var(--sparse); }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 10px;
+  }
+  code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+  code {
+    background: var(--surface-sunken);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    color: var(--text-primary);
+  }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  header.hero {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 32px;
+    margin-bottom: 40px;
+  }
+  .status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 5px 11px;
+    border-radius: 100px;
+    border: 1px solid var(--border-strong);
+    color: var(--text-secondary);
+    background: var(--surface-raised);
+  }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .dot.good { background: var(--status-good); }
+  .dot.warn { background: var(--status-warning); }
+  .dot.crit { background: var(--status-critical); }
+  .dot.pending { background: var(--text-tertiary); }
+
+  section { margin-bottom: 56px; }
+  section > .eyebrow { margin-bottom: 6px; }
+
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 24px 0 8px;
+  }
+  .stat-tile {
+    background: var(--surface-raised);
+    padding: 16px 18px;
+  }
+  .stat-tile .num {
+    font-family: var(--font-display);
+    font-size: 1.7rem;
+    font-weight: 700;
+    line-height: 1.1;
+  }
+  .stat-tile .label {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    background: var(--surface-sunken);
+    white-space: nowrap;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.num { font-family: var(--font-mono); text-align: right; white-space: nowrap; }
+  .src-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    border-radius: 5px;
+    white-space: nowrap;
+  }
+  .src-real { background: var(--status-good); color: #fff; }
+  .src-blocked { background: var(--status-critical); color: #fff; }
+  .src-pending { background: var(--status-warning); color: #1f1b16; }
+  .src-code { background: var(--surface-sunken); color: var(--text-secondary); border: 1px solid var(--border); }
+
+  .chart-card {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px 18px;
+    margin-top: 18px;
+  }
+  .chart-card h3 { margin-bottom: 2px; }
+  .chart-sub { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px; }
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 640px) { .chart-row { grid-template-columns: 1fr; } }
+
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin: 4px 0 14px; font-size: 0.82rem; color: var(--text-secondary); }
+  .legend-item { display: flex; align-items: center; gap: 7px; }
+  .legend-swatch { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+
+  .bars { display: flex; align-items: flex-end; gap: 14px; height: 190px; padding: 0 4px; }
+  .bar-group { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; height: 100%; min-width: 0; }
+  .bar-value { font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 4px; white-space: nowrap; }
+  .bar {
+    width: 100%;
+    max-width: 46px;
+    border-radius: 4px 4px 2px 2px;
+    position: relative;
+    transition: filter 0.15s ease;
+  }
+  .bar:hover { filter: brightness(1.08); }
+  .bar-label { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-tertiary); margin-top: 8px; text-align: center; }
+  .bar-tier { font-size: 0.62rem; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.03em; }
+
+  .cmp-row { display: flex; align-items: center; gap: 14px; margin: 14px 0; }
+  .cmp-label { width: 128px; flex: none; font-size: 0.85rem; color: var(--text-secondary); }
+  .cmp-track { flex: 1; height: 22px; background: var(--surface-sunken); border-radius: 5px; position: relative; overflow: hidden; }
+  .cmp-fill { height: 100%; border-radius: 5px 2px 2px 5px; display: flex; align-items: center; }
+  .cmp-fill .cmp-fill-label {
+    font-family: var(--font-mono); font-size: 0.72rem; color: #fff; padding-left: 9px; white-space: nowrap;
+  }
+
+  .callout {
+    border-left: 3px solid var(--status-warning);
+    background: var(--status-warning-soft);
+    border-radius: 0 8px 8px 0;
+    padding: 14px 18px;
+    font-size: 0.92rem;
+  }
+  .callout strong { display: block; margin-bottom: 3px; font-family: var(--font-mono); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--status-warning); }
+
+  .tooltip {
+    position: absolute;
+    background: var(--text-primary);
+    color: var(--surface);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    padding: 6px 9px;
+    border-radius: 6px;
+    pointer-events: none;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(-50%, -100%) translateY(-8px);
+    transition: opacity 0.1s ease;
+    z-index: 10;
+  }
+  .tooltip.show { opacity: 1; }
+  .chart-card { position: relative; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+    margin-top: 60px;
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+  }
+  footer p { margin: 0 0 6px; }
+
+  .toggle-table {
+    background: none; border: 1px solid var(--border-strong); color: var(--text-secondary);
+    font-family: var(--font-mono); font-size: 0.7rem; padding: 4px 9px; border-radius: 6px;
+    cursor: pointer; margin-top: 10px;
+  }
+  .toggle-table:hover { background: var(--surface-sunken); }
+  .data-table-panel[hidden] { display: none; }
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <div class="eyebrow">Thesis Lab · Paper 14 · thesis-lab/active_tests/regional-equity-audit</div>
+    <h1>Trustworthy Agricultural Intelligence Under Unequal Data Availability</h1>
+    <p class="prose" style="color:var(--text-secondary); margin-top:10px;">
+      Does AgroIntel's real, known data-availability gap — Kenya, Tanzania, Rwanda and
+      Burundi have real FAOSTAT producer-price coverage; Uganda, South Sudan, Somalia
+      and DRC do not — translate into a measurable service-quality gap for the
+      countries with less real data behind them? This report documents what was
+      actually measured, against what data, and what it does and doesn't show.
+    </p>
+    <div class="status-row">
+      <span class="pill"><span class="dot good"></span>RecommendationEngine comparison — complete</span>
+      <span class="pill"><span class="dot warn"></span>Forecast MAPE comparison — confounded</span>
+      <span class="pill"><span class="dot crit"></span>Calibration — badly miscalibrated</span>
+      <span class="pill"><span class="dot pending"></span>UG/SS/SO/CD real price data — still missing</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="eyebrow">At a glance</div>
+    <div class="stat-strip">
+      <div class="stat-tile"><div class="num tabular">4</div><div class="label">real data sources checked</div></div>
+      <div class="stat-tile"><div class="num tabular">2,880</div><div class="label">real forecast rows generated</div></div>
+      <div class="stat-tile"><div class="num tabular">38.5%</div><div class="label">real interval coverage vs. ~80% stated</div></div>
+      <div class="stat-tile"><div class="num tabular">0</div><div class="label">real FAOSTAT rows for UG/SS/SO/CD</div></div>
+      <div class="stat-tile"><div class="num tabular">2</div><div class="label">of 3 RecommendationEngine metrics reversed</div></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">01 · Data sources</div>
+    <h2>What real data this report is built from</h2>
+    <p class="prose">Every number below traces to a live system call or a real database row — none are simulated for this report. Four candidate sources for the missing UG/SS/SO/CD market prices were checked; only two of the report's findings depend on data that's fully in hand.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Source</th><th>What it provides</th><th>Status</th><th>Where</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>FAOSTAT</strong> — Producer Prices (PP), element&nbsp;5532</td>
+            <td>Annual real producer price, USD/tonne</td>
+            <td><span class="src-badge src-real">real, confirmed</span></td>
+            <td class="mono">services/market/faostat_prices.py</td>
+          </tr>
+          <tr>
+            <td><strong>RecommendationEngine</strong> live output</td>
+            <td>confidence, evidence_sufficient, supporting_signals per recommendation</td>
+            <td><span class="src-badge src-real">real, live call</span></td>
+            <td class="mono">services/intelligence/recommendations.py</td>
+          </tr>
+          <tr>
+            <td><strong>forecast_evaluations</strong> table</td>
+            <td>Real forecast bounds + resolved actual price, per (country, commodity, date)</td>
+            <td><span class="src-badge src-real">real, 2,880 rows</span></td>
+            <td class="mono">apps/workers/forecasting.py</td>
+          </tr>
+          <tr>
+            <td>Forecaster source</td>
+            <td>Hand-set confidence constants per model layer</td>
+            <td><span class="src-badge src-code">static code inspection</span></td>
+            <td class="mono">services/forecasting/price.py</td>
+          </tr>
+          <tr>
+            <td>Selina Wamucii</td>
+            <td>Wholesale/retail price scrape, all 8 countries</td>
+            <td><span class="src-badge src-blocked">unusable — site changed</span></td>
+            <td class="mono">services/market/selina_wamucii_prices.py</td>
+          </tr>
+          <tr>
+            <td>WFP DataBridges</td>
+            <td>Market prices for food-insecure/crisis contexts</td>
+            <td><span class="src-badge src-blocked">blocked — no credentials</span></td>
+            <td class="mono">services/market/wfp_prices.py</td>
+          </tr>
+          <tr>
+            <td>UN Comtrade</td>
+            <td>International trade flow value (import/export)</td>
+            <td><span class="src-badge src-pending">key valid, quota-limited</span></td>
+            <td class="mono">clients/comtrade.py</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">02 · Metrics — what's measured, and why it's the right measure</div>
+    <h2>Six metrics, six real questions</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Metric</th><th>Definition</th><th>Why this metric, specifically</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Real PP row count</strong></td>
+            <td>Rows FAOSTAT actually returns for a country</td>
+            <td>The root-cause variable — everything else tests a downstream effect of this real gap, not an assumed one.</td>
+          </tr>
+          <tr>
+            <td><strong>avg_confidence</strong></td>
+            <td>RecommendationEngine's self-reported certainty, 0–100</td>
+            <td>The number shown directly to a user — if it differs by data tier, users literally see different framing depending on their country.</td>
+          </tr>
+          <tr>
+            <td><strong>evidence_sufficient_rate</strong></td>
+            <td>Fraction of recommendations the real abstention gate judged adequately supported</td>
+            <td>This session's own concrete honesty mechanism (<code>_apply_evidence_gate</code>) — tests whether it actually fires more where evidence really is thinner.</td>
+          </tr>
+          <tr>
+            <td><strong>avg_supporting_signals</strong></td>
+            <td>Count of independent real pulse signals behind a recommendation</td>
+            <td>The raw ingredient the two metrics above are computed from — a mechanical, unopinionated proxy for "how much evidence existed."</td>
+          </tr>
+          <tr>
+            <td><strong>MAPE</strong></td>
+            <td>Mean Absolute Percentage Error, forecast vs. real resolved price</td>
+            <td>The standard real-world accuracy metric — though confounded here (see §04), since a data-sparse country's "actual price" may itself be synthetic.</td>
+          </tr>
+          <tr>
+            <td><strong>Interval coverage rate</strong></td>
+            <td>Fraction of real outcomes falling inside the model's own stated confidence bounds</td>
+            <td>Tests <em>calibration</em>, independent of accuracy — a system can be inaccurate but honest about it, or accurate but overconfident. This is the sharpest test of the paper's real question.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">03 · The root cause, confirmed live</div>
+    <h2>Real FAOSTAT coverage by country</h2>
+    <p class="prose">Live, authenticated call to <code>faostatservices.fao.org</code>, 2026-09-13 — not a cached or historical check. Kenya, Tanzania, Rwanda and Burundi have real annual producer-price series; Uganda, South Sudan, Somalia and DRC return exactly zero, with valid credentials.</p>
+    <div class="chart-card">
+      <h3>Real PP rows returned per country</h3>
+      <div class="chart-sub">FAOSTAT Producer Prices (element 5532, USD/tonne) · live call, 2026-09-13</div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--rich)"></span>Data-rich</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--sparse)"></span>Data-sparse</span>
+      </div>
+      <div class="bars" id="chart-faostat"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">04 · Does the gap show up where users see it?</div>
+    <h2>RecommendationEngine: real, live comparison</h2>
+    <p class="prose">Two independent live calls, hours apart, 2026-09-13 (numbers shown from the second). Hypothesis: data-sparse countries should score worse on all three. Confidence moved in that direction, weakly — the other two reversed, consistently across both runs.</p>
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>avg_confidence</h3>
+        <div class="chart-sub">0–100 scale · hypothesis: rich &gt; sparse</div>
+        <div id="cmp-confidence"></div>
+      </div>
+      <div class="chart-card">
+        <h3>evidence_sufficient_rate</h3>
+        <div class="chart-sub">fraction · hypothesis: rich &gt; sparse — <strong style="color:var(--status-warning)">reversed</strong></div>
+        <div id="cmp-evidence"></div>
+      </div>
+    </div>
+    <div class="chart-card" style="margin-top:20px; max-width: 460px;">
+      <h3>avg_supporting_signals</h3>
+      <div class="chart-sub">count · hypothesis: rich &gt; sparse — <strong style="color:var(--status-warning)">reversed</strong></div>
+      <div id="cmp-signals"></div>
+    </div>
+    <button class="toggle-table" onclick="document.getElementById('re-table').hidden = !document.getElementById('re-table').hidden">Show per-country table</button>
+    <div class="data-table-panel" id="re-table" hidden style="margin-top:12px;">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Country</th><th>Tier</th><th class="num">n_recs</th><th class="num">avg_confidence</th><th class="num">evidence_sufficient_rate</th><th class="num">avg_supporting_signals</th></tr></thead>
+          <tbody id="re-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">05 · Does the gap show up in forecast accuracy?</div>
+    <h2>Forecast MAPE &amp; interval coverage, by tier</h2>
+    <p class="prose">From the same 2,880 real forecast rows, evaluated against real resolved prices, 2026-09-13. MAPE is <em>reversed</em> from the hypothesis — but this comparison is confounded (see callout) and should not be read as "the system serves data-sparse countries better."</p>
+    <div class="chart-row">
+      <div class="chart-card">
+        <h3>Mean Absolute % Error</h3>
+        <div class="chart-sub">lower is better · hypothesis: rich &lt; sparse — <strong style="color:var(--status-warning)">reversed</strong></div>
+        <div id="cmp-mape"></div>
+      </div>
+      <div class="chart-card">
+        <h3>Interval coverage rate</h3>
+        <div class="chart-sub">target ≈ 0.80 · hypothesis: rich &gt; sparse</div>
+        <div id="cmp-coverage"></div>
+      </div>
+    </div>
+    <div class="callout" style="margin-top:18px;">
+      <strong>Why the MAPE reversal isn't good news</strong>
+      A data-sparse country's "actual price" in <code>forecast_evaluations</code> may itself derive from the synthetic <code>BASE_PRICES_USD</code> random walk, not a real market observation. Forecasting a synthetic walk against itself is a mechanically easier task than forecasting a real, volatile market — so a lower MAPE here most likely reflects an easier, less meaningful target, not better real-world forecasting.
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">06 · The sharper finding</div>
+    <h2>Stated confidence vs. real, measured accuracy</h2>
+    <p class="prose">System-wide, n=96, 2026-09-13 — the first real calibration measurement this system has ever produced. The forecaster's confidence values are hand-set constants per model layer (Prophet: <code class="mono">0.80</code> trained / <code class="mono">0.70</code> fallback; XGBoost: <code class="mono">0.85 − 0.01×day</code> trained / <code class="mono">0.65</code> fallback, blended 60/40 in the national ensemble). Which tier applies is gated only by <code class="mono">MIN_TRAINING_POINTS = 14</code> — a check on history <em>length</em>, blind to whether that history is real market data or a same-length synthetic walk.</p>
+    <div class="chart-card">
+      <h3>Claimed vs. real interval coverage</h3>
+      <div class="chart-sub">"confidence" implies the real price falls in-bounds this often</div>
+      <div class="cmp-row">
+        <div class="cmp-label">Stated (~80%)</div>
+        <div class="cmp-track"><div class="cmp-fill" style="width:80%; background:var(--text-tertiary);"><span class="cmp-fill-label">80%</span></div></div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-label">Real, measured</div>
+        <div class="cmp-track"><div class="cmp-fill" style="width:38.5%; background:var(--status-warning);"><span class="cmp-fill-label">38.5%</span></div></div>
+      </div>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 14px 0 0;">Real outcomes land inside their own stated confidence interval less than half as often as claimed — a ~2× miscalibration, not a rounding-level gap. n=96, one day's forecasts; direction is unlikely to reverse with more data, but the exact figure should be treated as a first measurement, not a final one.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">07 · Honest summary</div>
+    <h2>What's confirmed, what isn't, what's still open</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Claim</th><th>Result</th><th>Confidence</th></tr></thead>
+        <tbody>
+          <tr><td>FAOSTAT genuinely lacks UG/SS/SO/CD data</td><td>Confirmed</td><td><span class="src-badge src-real">high — live, authenticated</span></td></tr>
+          <tr><td>RecommendationEngine serves data-sparse countries worse</td><td>Not confirmed (reversed, 2 of 3 metrics)</td><td><span class="src-badge src-real">high — 2 independent runs</span></td></tr>
+          <tr><td>Data-sparse countries get worse forecasts (MAPE)</td><td>Confounded — cannot be tested fairly with current data</td><td><span class="src-badge src-pending">low — synthetic ground truth</span></td></tr>
+          <tr><td>The forecaster's confidence signal ignores real-vs-synthetic input</td><td>Confirmed by code inspection</td><td><span class="src-badge src-real">high — direct source read</span></td></tr>
+          <tr><td>The whole system is poorly calibrated (regardless of tier)</td><td>Confirmed</td><td><span class="src-badge src-pending">medium — n=96, one day</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    <p>Generated 2026-09-13/14 from live, unmocked calls against production Supabase and FAOSTAT — see <code>thesis-lab/active_tests/regional-equity-audit/experiment_blueprint.md</code> and <code>thesis-lab/active_tests/forecast-confidence-calibration/experiment_blueprint.md</code> for the full run log, including the FAOSTAT/Selina Wamucii/WFP/Comtrade investigation this report draws its data-sources table from.</p>
+    <p>Paper 14 of the AgroIntel PhD thesis publication roadmap · <code>thesis-lab/PUBLICATION_ROADMAP.md</code></p>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  const RICH = getComputedStyle(document.documentElement).getPropertyValue('--rich').trim() || '#eb6834';
+  const SPARSE = getComputedStyle(document.documentElement).getPropertyValue('--sparse').trim() || '#2a78d6';
+
+  function tooltip(container) {
+    const el = document.createElement('div');
+    el.className = 'tooltip';
+    container.appendChild(el);
+    return {
+      show(x, y, text) {
+        el.textContent = text;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        el.classList.add('show');
+      },
+      hide() { el.classList.remove('show'); }
+    };
+  }
+
+  // ---- FAOSTAT bar chart (8 countries) ----
+  const faostat = [
+    {cc:'KE', rows:1284, tier:'rich'}, {cc:'TZ', rows:274, tier:'rich'},
+    {cc:'RW', rows:824, tier:'rich'}, {cc:'BI', rows:574, tier:'rich'},
+    {cc:'UG', rows:0, tier:'sparse'}, {cc:'SS', rows:0, tier:'sparse'},
+    {cc:'SO', rows:0, tier:'sparse'}, {cc:'CD', rows:0, tier:'sparse'},
+  ];
+  const faostatEl = document.getElementById('chart-faostat');
+  const faostatMax = Math.max(...faostat.map(d => d.rows));
+  const faostatTip = tooltip(faostatEl.closest('.chart-card'));
+  faostat.forEach(d => {
+    const group = document.createElement('div');
+    group.className = 'bar-group';
+    const h = d.rows === 0 ? 3 : Math.max(6, Math.round((d.rows / faostatMax) * 150));
+    const color = d.tier === 'rich' ? RICH : SPARSE;
+    group.innerHTML = `
+      <div class="bar-value tabular">${d.rows.toLocaleString()}</div>
+      <div class="bar" style="height:${h}px; background:${color};"></div>
+      <div class="bar-label">${d.cc}</div>
+      <div class="bar-tier">${d.tier}</div>
+    `;
+    const bar = group.querySelector('.bar');
+    bar.addEventListener('mouseenter', (e) => {
+      const r = bar.getBoundingClientRect();
+      const cardR = faostatEl.closest('.chart-card').getBoundingClientRect();
+      faostatTip.show(r.left - cardR.left + r.width / 2, r.top - cardR.top, `${d.cc}: ${d.rows.toLocaleString()} real rows (${d.tier})`);
+    });
+    bar.addEventListener('mouseleave', () => faostatTip.hide());
+    faostatEl.appendChild(group);
+  });
+
+  // ---- Two-bar comparison charts ----
+  function cmpChart(containerId, richVal, sparseVal, fmt, maxOverride) {
+    const el = document.getElementById(containerId);
+    const max = maxOverride || Math.max(richVal, sparseVal) * 1.15;
+    const rows = [
+      {label: 'Data-rich', val: richVal, color: RICH},
+      {label: 'Data-sparse', val: sparseVal, color: SPARSE},
+    ];
+    rows.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'cmp-row';
+      const pct = Math.max(4, (r.val / max) * 100);
+      row.innerHTML = `
+        <div class="cmp-label">${r.label}</div>
+        <div class="cmp-track"><div class="cmp-fill tabular" style="width:${pct}%; background:${r.color};"><span class="cmp-fill-label">${fmt(r.val)}</span></div></div>
+      `;
+      el.appendChild(row);
+    });
+  }
+  cmpChart('cmp-confidence', 82.52, 80.91, v => v.toFixed(1), 100);
+  cmpChart('cmp-evidence', 0.444, 0.501, v => (v*100).toFixed(1) + '%', 1);
+  cmpChart('cmp-signals', 1.78, 1.88, v => v.toFixed(2), 2.5);
+  cmpChart('cmp-mape', 9.66, 6.81, v => v.toFixed(2) + '%', 15);
+  cmpChart('cmp-coverage', 0.417, 0.354, v => (v*100).toFixed(1) + '%', 1);
+
+  // ---- Per-country RecommendationEngine table ----
+  const reData = [
+    {cc:'KE', tier:'rich', n:20, conf:83.75, ev:0.400, supp:1.70},
+    {cc:'TZ', tier:'rich', n:26, conf:86.35, ev:0.308, supp:1.54},
+    {cc:'RW', tier:'rich', n:15, conf:80.00, ev:0.533, supp:1.93},
+    {cc:'BI', tier:'rich', n:15, conf:80.00, ev:0.533, supp:1.93},
+    {cc:'UG', tier:'sparse', n:24, conf:85.63, ev:0.333, supp:1.58},
+    {cc:'SS', tier:'sparse', n:15, conf:80.00, ev:0.533, supp:1.93},
+    {cc:'SO', tier:'sparse', n:12, conf:76.25, ev:0.667, supp:2.17},
+    {cc:'CD', tier:'sparse', n:17, conf:81.76, ev:0.471, supp:1.82},
+  ];
+  const tbody = document.getElementById('re-table-body');
+  reData.forEach(d => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${d.cc}</td><td>${d.tier}</td><td class="num tabular">${d.n}</td><td class="num tabular">${d.conf.toFixed(2)}</td><td class="num tabular">${d.ev.toFixed(3)}</td><td class="num tabular">${d.supp.toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  });
+})();
+</script>

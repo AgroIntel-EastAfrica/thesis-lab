@@ -269,9 +269,61 @@ the hypothesis cleanly:
   the calibration problem (`forecast-confidence-calibration`) dominates
   over any equity gap at this layer.
 
-This experiment is ready to move to `thesis-lab/concluded/` — the honest
-overall finding is that AgroIntel's real equity gap (confirmed to exist
-structurally: FAOSTAT coverage genuinely differs by country) does **not**
-cleanly show up as a service-quality gap in either of the two
-user-facing layers tested, once methodology confounds are accounted for.
-That's a legitimate, if unglamorous, result for Paper 14.
+**Phase 1 (this document) is ready to move to `thesis-lab/concluded/` once
+Phase 2 below is scoped** — the honest overall finding so far is that
+AgroIntel's real equity gap (confirmed to exist structurally: FAOSTAT
+coverage genuinely differs by country) does **not** cleanly show up as a
+service-quality gap in either of the two user-facing layers tested, once
+methodology confounds are accounted for. That's a legitimate, if
+unglamorous, result — but it is a *partial* answer to Paper 14's real
+scope, not the full one. See below.
+
+## Scope completeness check, 2026-09-14
+
+Paper 14's original framing (per the adopted 15-paper reorganization
+proposal, "E. Trustworthy AI") asks whether AI reliability changes
+according to **geography, commodity, market, data availability, source
+coverage**, investigated via **uncertainty, calibration, provenance,
+transparency, abstention, subgroup performance**. Checked Phase 1's real
+coverage against this full list honestly, rather than assuming "we wrote
+an experiment about this" means "we covered it":
+
+**Genuinely covered by Phase 1:**
+- **geography** — the entire country-tier comparison above.
+- **data availability** / **source coverage** — the FAOSTAT/Selina
+  Wamucii/WFP/Comtrade investigation.
+- **uncertainty** / **calibration** — the centerpiece finding (38.5%
+  real coverage vs. ~80% stated).
+- **abstention** — `evidence_sufficient_rate` /
+  `_apply_evidence_gate`, this session's own real abstention mechanism.
+- **subgroup performance** — the country-tier breakdown *is* this axis.
+
+**Genuinely NOT covered — real, unscoped gaps, not just "waiting on
+better data":**
+- **commodity** — everything measured so far is a country-level
+  aggregate across commodities. Whether reliability varies *by
+  commodity* (e.g. is coffee forecasting more equitable across
+  countries than maize forecasting?) has not been tested at all.
+- **market** (geography *level*, not country) — `services/forecasting/price.py`
+  has three real, distinct layers (LOCAL/XGBoost, SUB_NATIONAL/Prophet,
+  NATIONAL/ensemble). Phase 1 only measured NATIONAL-level output;
+  whether the equity picture differs at LOCAL or SUB_NATIONAL level is
+  unknown.
+- **provenance** — this codebase already has real `data_source`/
+  `price_source`/`data_confidence` disclosure fields (from an earlier
+  "stale data presented as live" audit). Whether that disclosure is
+  itself equitable — i.e. does a data-sparse country's response
+  honestly label the `BASE_PRICES_USD` fallback as clearly as a
+  data-rich country's response labels its real FAOSTAT source? — has
+  never been directly audited.
+- **transparency** — the same gap as provenance, as its own axis:
+  does the *user-facing* framing (not just an internal field) disclose
+  the difference in evidence quality between tiers?
+
+**Phase 2 (not started, blocked on real data)**: once WFP DataBridges
+credentials or a working Comtrade quota provide real market prices for
+UG/SS/SO/CD (see above), re-run this experiment properly scoped to all
+six real dimensions — not just re-running the country-tier comparison
+with better data, but adding commodity-level, geography-level, and
+provenance/transparency audits that Phase 1 never attempted. Track this
+as the actual reopen criterion, not "when the data shows up."
