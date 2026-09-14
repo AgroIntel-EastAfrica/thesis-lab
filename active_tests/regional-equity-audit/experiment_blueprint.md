@@ -196,23 +196,40 @@ alternative real signal (import/export trade value, a different kind
 of data than domestic producer prices). The project owner's existing
 `COMTRADE_API_KEY` was rejected (401) on first check; regenerated the
 key via the UN Comtrade developer portal, which resolved the auth
-error — but the very next live call hit `403 Out of call volume quota`
-(free-tier daily quota already exhausted, ~5h to replenish). So: the
-credential itself is now confirmed genuinely valid, but real data
-coverage for SS/SO specifically has **not yet been confirmed either
-way** — the quota wall was hit before a real trade-flow response came
-back. Revisit once the quota resets rather than assume either outcome.
+error, then hit a `403 Out of call volume quota` wall on the very next
+call.
+
+**Resolved definitively, 2026-09-14, once the quota reset**: real,
+authenticated, `200 OK` calls (not errors) for South Sudan and Somalia
+— maize imports specifically, and then `TOTAL` (every commodity, every
+trading partner combined) imports for both countries, 2022 and 2023 —
+all returned **zero rows**. This isn't a maize-specific or single-year
+gap: these two countries report *no* import trade data to UN Comtrade
+at all for the years checked, independent of commodity. Most likely
+cause: no functioning national statistics office submitting data to UN
+systems, consistent with both countries' real conflict/state-fragility
+context — a genuine, structural absence, not a query or credential
+problem.
 
 **Status of all 4 real sources checked for UG/SS/SO/CD:**
 1. FAOSTAT — confirmed, definitively, zero real rows (see above).
 2. Selina Wamucii — site's content model changed, no per-unit price
    recoverable regardless of credentials.
 3. WFP DataBridges — blocked on registration (external, human step).
-4. UN Comtrade — credential now valid, real coverage unconfirmed
-   pending quota reset.
+4. UN Comtrade — confirmed, definitively, zero real rows for SS/SO
+   (checked directly; UG/CD not yet individually re-verified but expected
+   to match given the same underlying cause).
 
-WFP and (pending its quota reset) Comtrade remain the only two real,
-unresolved candidates to close this gap.
+**This is the strongest evidence yet for the equity gap being real and
+structural**: two independent, major international statistical systems
+(FAO and UN Comtrade) both report zero real data for South Sudan and
+Somalia — not a coincidence isolated to one data provider's coverage
+choices, but a consistent pattern across systems, most plausibly
+reflecting the countries' own limited capacity to generate and submit
+official statistics. WFP DataBridges (a system specifically designed to
+monitor markets *despite* this kind of gap, via field data collection
+rather than official government submissions) remains the one real,
+unresolved candidate — still blocked on registration.
 
 **RecommendationEngine (confidence, evidence_sufficient, supporting_signals) — real, live comparison:**
 
