@@ -362,7 +362,7 @@
           <tr>
             <td>UN Comtrade</td>
             <td>International trade flow value (import/export)</td>
-            <td><span class="src-badge src-pending">key valid, quota-limited</span></td>
+            <td><span class="src-badge src-real">confirmed, zero real rows</span></td>
             <td class="mono">clients/comtrade.py</td>
           </tr>
         </tbody>
@@ -508,6 +508,7 @@
         <thead><tr><th>Claim</th><th>Result</th><th>Confidence</th></tr></thead>
         <tbody>
           <tr><td>FAOSTAT genuinely lacks UG/SS/SO/CD data</td><td>Confirmed</td><td><span class="src-badge src-real">high — live, authenticated</span></td></tr>
+          <tr><td>The data gap is structural, not one provider's coverage choice</td><td>Confirmed — UN Comtrade independently agrees with FAOSTAT for South Sudan and Somalia (zero rows, every commodity, 2022–2023)</td><td><span class="src-badge src-real">high — 2 independent systems</span></td></tr>
           <tr><td>RecommendationEngine serves data-sparse countries worse</td><td>Not confirmed (reversed, 2 of 3 metrics)</td><td><span class="src-badge src-real">high — 2 independent runs</span></td></tr>
           <tr><td>Data-sparse countries get worse forecasts (MAPE)</td><td>Confounded — cannot be tested fairly with current data</td><td><span class="src-badge src-pending">low — synthetic ground truth</span></td></tr>
           <tr><td>The forecaster's confidence signal ignores real-vs-synthetic input</td><td>Confirmed by code inspection</td><td><span class="src-badge src-real">high — direct source read</span></td></tr>

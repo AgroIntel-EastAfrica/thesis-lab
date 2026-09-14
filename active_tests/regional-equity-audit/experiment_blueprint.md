@@ -344,3 +344,89 @@ six real dimensions — not just re-running the country-tier comparison
 with better data, but adding commodity-level, geography-level, and
 provenance/transparency audits that Phase 1 never attempted. Track this
 as the actual reopen criterion, not "when the data shows up."
+
+Correction, 2026-09-14: the provenance/transparency axis turned out to
+be independently testable without WFP or Comtrade — see below. Only the
+commodity-level and market/geography-level axes, and the
+data-sparse-country forecast-quality comparison specifically, remain
+genuinely blocked on real ground truth.
+
+## Phase 2a: provenance & transparency audit, 2026-09-14
+
+Tested whether the system's disclosure of *which* data backs a given
+price is itself equitable across country tiers — both the internal
+`price_source` field (`services/market/price_model.py`) and what the
+dashboard actually shows a user.
+
+**The disclosure design itself is honest, by inspection:**
+`_compute_daily_price` tags every price with a specific `price_source`
+(`faostat` / `eatta` / `eax` / `imf_pcps` / `selina_wamucii` / `wfp` /
+`baseline`), not a generic "real vs. fake" boolean. The dashboard
+(`CommoditiesPage.tsx`, `ForecastingPage.tsx`, `DashboardPage.tsx`,
+`CommodityDetailPage.tsx`) renders a distinct, color-coded, localized
+(en/sw/fr) badge per source, plus an aggregate summary line per
+country ("Prices: 4 FAOSTAT · 28 Modeled — each card's own source
+badge shows which applies to it"). A `baseline` price is explicitly
+labeled "Modeled" (`t('commodities_page.price_source_modeled')`), not
+silently presented as live. This is a real, working disclosure
+mechanism, not a stub.
+
+**One structural gap found**: the top-level response `meta.data_source`
+field (`DATA_SOURCE_LABEL` in `price_model.py`) is a single static
+string describing the *whole system's* methodology ("FAOSTAT... where
+available... otherwise anchored to realistic EAC baselines"),
+identical on every response regardless of which source that specific
+response actually used. It's truthful as a system description but
+isn't response-specific — a South Sudan response where every item is
+`baseline` gets the same top-level string as a Kenya response that's
+mostly `faostat`. The per-item badges (above) are what actually carry
+the honest signal; the top-level meta field doesn't.
+
+**A second, more consequential structural finding**: IMF PCPS
+(`services/market/imf_prices.py`) is a *global* commodity benchmark —
+the same number is written to all 8 countries' cache keys by design
+(confirmed in code and live: `IMF_API_KEY` is configured in `.env` but
+a live cache check on 2026-09-14 found zero synced PCPS prices for any
+commodity/country — the source is configured but currently inert, so
+this doesn't affect any live response today). If it starts syncing,
+it would be tagged and badged identically to FAOSTAT ("real, live
+source") despite carrying no country-specific signal at all — a real
+equity distinction (country-specific-real vs. generic-real) the
+current one-tier badge system doesn't encode. Worth a real fix if/when
+IMF PCPS starts actually syncing; not urgent today since it's inert.
+
+**Live incident found and fixed during this audit**: a direct,
+read-only check of the real production price model (`get_daily_price`)
+for South Sudan, Somalia, and Uganda maize found `price_source:
+"selina_wamucii"` with prices of **$2,090 / $1,977 / $2,030 per MT** —
+4-7x the intended baseline (SS $420, SO $380, UG $280) and badged with
+the same "real, live source" treatment as FAOSTAT. Root cause: this
+session's earlier fix to `services/market/selina_wamucii_prices.py`
+(removing a fallback regex that was caching a stray copyright-year
+digit, `2026.0`, as a fake price) stopped new fabrication but never
+purged the already-cached bad values, which carry an 8-day Redis TTL.
+Confirmed via direct cache inspection: 56 `selina_price:*` keys held
+the stale `2026.0`-derived fabricated price across 8 commodities × 7
+countries (every country except DRC, which had already fallen through
+to `baseline`). Purged all 56 stale `selina_price:*` keys plus 3
+downstream `price:*` result-cache keys (with explicit user approval
+for both, since this touches live production Redis); re-verified
+end-to-end afterward — SS/SO/UG maize now correctly returns
+`price_source: "baseline"` at $433/$371/$281, matching intent.
+
+**Why this matters for the equity claim, beyond being a bug**: until
+this fix, the system wasn't just *missing* real data for South Sudan,
+Somalia, and Uganda (the already-established finding) — it was
+actively mislabeling fabricated data as equally trustworthy as Kenya's
+real FAOSTAT data, for the exact countries this whole study is about.
+An honest "Modeled" label on a wrong-but-transparent baseline is a
+data-availability gap; a "real source" badge on fabricated data is a
+transparency failure layered on top of it — arguably a worse form of
+inequity, since it actively misleads rather than honestly discloses.
+This is now fixed and verified live.
+
+**Provenance/transparency verdict**: the disclosure *design* is sound
+and equitable (same badge logic, same languages, same granularity,
+regardless of country tier) — no fix needed there. The *data behind*
+that design had a real, live equity-relevant bug, now fixed. This axis
+is genuinely covered as of 2026-09-14, without needing WFP or Comtrade.
