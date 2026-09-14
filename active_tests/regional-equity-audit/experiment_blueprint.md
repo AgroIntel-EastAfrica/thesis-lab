@@ -430,3 +430,85 @@ and equitable (same badge logic, same languages, same granularity,
 regardless of country tier) — no fix needed there. The *data behind*
 that design had a real, live equity-relevant bug, now fixed. This axis
 is genuinely covered as of 2026-09-14, without needing WFP or Comtrade.
+
+## Phase 2b: commodity-level audit, 2026-09-14
+
+Tested whether forecast reliability varies *by commodity*, independent
+of country — the other unscoped gap from the scope-completeness check.
+Reused the real `forecast_evaluations` rows already behind the
+forecast-confidence-calibration finding (same table, same n=96,
+`thesis-lab/active_tests/regional-equity-audit/scripts/audit_by_commodity.py`),
+re-sliced by commodity instead of country. No new data source needed —
+all 8 countries are represented for every commodity, so this slice
+isn't confounded by the country-tier gap the way the MAPE comparison
+in Phase 1 was.
+
+**Raw result** (avg MAPE and interval coverage per commodity, n=8
+countries each):
+
+```
+commodity           n  countries  avg_mape  coverage  w/bounds
+maize               8          8     18.35     0.000         8
+cassava              8          8     17.39     0.500         8
+tea                  8          8      9.30     0.375         8
+sweet_potatoes       8          8      7.88     0.125         8
+sesame               8          8      7.41     0.375         8
+wheat                8          8      7.14     0.375         8
+groundnuts           8          8      5.90     0.375         8
+soybeans             8          8      5.73     0.500         8
+rice                 8          8      5.18     0.375         8
+coffee               8          8      5.04     0.625         8
+beans                8          8      4.81     0.625         8
+sorghum              8          8      4.70     0.375         8
+```
+
+**Real confound found before trusting this table at face value**:
+maize's outlier status (worst MAPE *and* zero interval coverage) traced
+directly to the same Selina Wamucii cache bug fixed in Phase 2a above,
+not a genuine forecasting weakness. Confirmed precisely by reading
+`services/forecasting/price.py`'s `get_price_forecast`: the forecaster
+trains only on `get_price_history()` (line 512), which is purely
+synthetic and anchors to the *correct* `BASE_PRICES_USD` baseline —
+untouched by the cache bug — so `predicted_price` for SS/SO/UG maize
+was fine. But `apps/workers/forecasting.py::evaluate_forecast_accuracy`
+fills in `actual_price` via a direct call to `get_daily_price()` (line
+223) — the exact function that was serving the fabricated ~$2,000+/MT
+value for SS/SO/UG maize at whatever point these rows were evaluated.
+A correct forecast compared against a fabricated "actual" produces
+exactly this signature: enormous MAPE, zero coverage. This is a
+measurement artifact, not evidence maize is hard to forecast.
+
+**Scope of the confound**: the Selina cache bug (Phase 2a) affected 8
+commodities — onions, maize, sorghum, rice, cassava, tomatoes, beans,
+coffee — of which 6 overlap this table (maize, cassava, rice, sorghum,
+beans, coffee). Only SS/SO/UG rows *within* those 6 commodities could
+be affected (KE/TZ/RW/BI have FAOSTAT; CD falls through to the honestly-
+labeled baseline) — at most 3 of each commodity's 8 country-rows. Maize
+is confirmed contaminated (directly traced above). Cassava, rice,
+sorghum, beans, and coffee are *unverified* — plausible but not
+individually confirmed the way maize was, since coffee/beans/sorghum's
+good calibration numbers argue against uniform contamination. Tea,
+sweet_potatoes, sesame, wheat, groundnuts, and soybeans were **not** in
+the Selina stale-key list at all — genuinely clean data, unaffected by
+this bug.
+
+**Trustworthy preliminary finding, restricted to the 6 clean
+commodities**: sweet_potatoes has the worst interval coverage (12.5%,
+1/8) of the clean set — worse than the 38.5% system-wide calibration
+average — while tea has the highest MAPE (9.3%) among them. Soybeans
+is the best-calibrated clean commodity (50% coverage, still well below
+the stated ~80%). Maize and cassava's numbers should be treated as
+unreliable until re-measured post-fix.
+
+**Next step to close this properly**: re-run `update_price_forecasts` +
+`evaluate_forecast_accuracy` now that the Selina cache is clean (same
+method used to produce the original calibration number — stand up a
+local worker against real Supabase and call both tasks directly) to
+get a trustworthy maize/cassava/rice/sorghum/beans/coffee reading, then
+re-run `audit_by_commodity.py`. Not done yet as part of this pass —
+flagging as the honest next action rather than presenting the
+contaminated numbers as final.
+
+**Same n=96/single-day caveat as the calibration experiment applies**:
+one row per (country, commodity) pair, not a longitudinal sample —
+directionally informative, not a stable estimate.
