@@ -573,17 +573,58 @@ comparison in Phase 1, and now this), is that in places real data
 *does* exist, it can expose the synthetic fallback as badly wrong —
 making data-rich countries look worse on this specific metric, for a
 reason that has nothing to do with real-world forecasting difficulty
-and everything to do with an unvalidated hardcoded table. This is a
-genuine, real, actionable finding: `BASE_PRICES_USD`'s per-country
-values for coffee and tea specifically should be re-derived from real
-FAOSTAT levels (already synced, already in Redis) rather than left as
-the original hand-guessed estimates — maize's much smaller miss (~1.2x)
-shows this isn't true of every commodity, so a full commodity-by-
-commodity recalibration against already-available real data, not a
-blanket rewrite, is the right scoped fix. Not fixed as part of this
-pass — flagging as a real, concrete finding and a well-scoped follow-up
-action, consistent with this experiment's role as an audit, not a
-silent-fix pipeline.
+and everything to do with an unvalidated hardcoded table.
+
+**Fixed properly, 2026-09-15** (not a data patch — a mechanism fix):
+rather than hand-editing `BASE_PRICES_USD`'s coffee/tea numbers (which
+would just be a new set of unvalidated guesses, and wouldn't help any
+other commodity/country pair with the same latent problem), changed
+the actual mechanism. Added `get_real_anchor_price()` to
+`services/market/price_model.py` — reuses the exact same real-source
+priority chain `_compute_daily_price` already resolves (FAOSTAT → EATTA
+→ EAX → IMF PCPS → Selina Wamucii → WFP), returning `None` if nothing
+real exists rather than silently falling through to the hardcoded
+baseline. `get_price_history()` now accepts an optional `real_anchor`
+parameter — when given, the deterministic backfill walk starts from
+the real price instead of the `BASE_PRICES_USD` guess (day-to-day
+movement is still a simulated walk either way — FAOSTAT gives one
+current figure, not a real daily series — this only fixes the
+*starting point*). `services/forecasting/price.py`'s
+`get_price_forecast` now calls `get_real_anchor_price()` before
+training and passes it through. All other ~15 existing callers of
+`get_price_history()` (dashboard sparklines, AI assistant, momentum/
+anomaly detectors, opportunity engine, etc.) are unaffected —
+`real_anchor` is keyword-only and defaults to `None`, so their
+behavior is byte-for-byte unchanged.
+
+**Verified live, end-to-end**: called `forecast_country_commodity`
+directly for the exact pairs that exposed the bug —
+
+```
+BI coffee: real_anchor=270.90   forecast[0]=273.85   (was anchored ~$2,600)
+RW coffee: real_anchor=277.40   forecast[0]=265.84   (was anchored ~$2,800)
+KE coffee: real_anchor=4886.50  forecast[0]=4654.84  (was anchored ~$2,500)
+BI tea:    real_anchor=135.50   forecast[0]=125.51   (was anchored ~$1,750)
+RW tea:    real_anchor=179.40   forecast[0]=182.80   (was anchored ~$1,800)
+```
+
+Every forecast now lands within a few percent of the real anchor,
+instead of being off by an order of magnitude. Existing test suites
+(`test_price_model.py`, `test_workers_forecasting.py`,
+`test_forecasting_price.py`, `test_price_forecasting.py`) all still
+pass unchanged. `ruff check` clean on both modified files.
+
+**Scope note**: this fixes the verified path
+(`forecast_country_commodity`, what `update_price_forecasts` actually
+calls). `services/forecasting/base.py` and `services/forecasting/
+ensemble.py` call `get_price_history()` the same unanchored way and
+likely have the identical latent issue, but that wasn't independently
+verified the way price.py's path was — flagged here rather than
+assumed and fixed blind. `BASE_PRICES_USD` itself is untouched and
+still the honest, disclosed fallback for the 4 data-sparse countries
+and any commodity with no real coverage at all — this fix only changes
+what happens when real data *does* exist and was previously being
+ignored.
 
 **Cross-reference**: this also bears directly on the
 forecast-confidence-calibration experiment's (Paper 5) hypothesis —
