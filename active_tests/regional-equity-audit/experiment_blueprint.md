@@ -629,3 +629,223 @@ ignored.
 **Cross-reference**: this also bears directly on the
 forecast-confidence-calibration experiment's (Paper 5) hypothesis —
 noted there.
+
+## Phase 2c: market / geography-level audit, 2026-09-15
+
+Closes the last unscoped axis from the "Scope completeness check"
+section: does the equity picture differ at LOCAL (XGBoost) vs
+SUB_NATIONAL (Prophet) vs NATIONAL (ensemble) — the three real forecaster
+layers `services/forecasting/price.py` implements — given Phase 1 only
+ever exercised NATIONAL (`forecast_country_commodity` hardcodes
+`GeographyLevel.NATIONAL`). New script:
+`thesis-lab/active_tests/regional-equity-audit/scripts/audit_geography_levels.py`.
+
+**Real bug found before any equity comparison was possible**: calling
+`PriceForecaster.forecast_price()` with `GeographyLevel.LOCAL` or
+`GeographyLevel.SUB_NATIONAL` directly — the natural, first-class enum
+values, used exactly this way elsewhere in the codebase
+(`services/opportunity_engine/scoring.py`, `ml/evaluation/*`) — silently
+returned the **NATIONAL** ensemble forecast instead, identical
+`model_type`, confidence, and value every time. Traced to
+`services/forecasting/base.py`'s `get_layer_config`: its `layer_mapping`
+dict had entries for the more granular `FARM`/`VILLAGE`/`CITY` → LOCAL
+and `DISTRICT`/`REGION` → SUB_NATIONAL, but no entry for the `LOCAL` and
+`SUB_NATIONAL` enum values themselves — both fell through to the
+`"NATIONAL"` default. An existing test
+(`test_forecasting_base.py::TestGetLayerConfig::test_unknown_defaults_to_national`)
+had actually codified this exact bug as intended behavior, asserting
+`get_layer_config(GeographyLevel.LOCAL).layer == "NATIONAL"` — which is
+why it shipped untested against the direct-name case.
+
+**Fixed**: added `"LOCAL": "LOCAL"` and `"SUB_NATIONAL": "SUB_NATIONAL"`
+to `layer_mapping` (existing FARM/VILLAGE/DISTRICT/REGION routes
+untouched). Updated the misleading test to assert the correct mapping,
+added direct-value coverage for both, and repointed the "unknown
+defaults to national" case at a genuinely unmapped value
+(`GeographyLevel.SUPRA_NATIONAL`). Verified: the audit script now
+returns three genuinely distinct layers (`xgboost`/`prophet`/`ensemble`)
+instead of three copies of the same one. Full relevant test sweep (12
+files, 520 tests) passes. **Live production blast radius**: none —
+`forecast_country_commodity` (what `update_price_forecasts` actually
+calls) hardcodes `GeographyLevel.NATIONAL` directly and was never
+affected; this bug only mattered to a caller explicitly requesting
+LOCAL/SUB_NATIONAL, which nothing production-facing currently does. Real
+nonetheless — it defeated the layer architecture for exactly the two
+enum values named after it, and blocked this audit from being possible
+at all.
+
+**Once routed correctly, the real geography-level comparison** (maize,
+all 8 countries, with the 2026-09-15 real-anchor fix applied so results
+reflect the current, fixed forecaster):
+
+```
+             LOCAL (xgboost)   SUB_NATIONAL (prophet)   NATIONAL (ensemble)
+KE (rich)    conf 0.83          conf 0.80                 conf 0.812
+TZ (rich)    conf 0.83          conf 0.80                 conf 0.812
+RW (rich)    conf 0.83          conf 0.80                 conf 0.812
+BI (rich)    conf 0.83          conf 0.80                 conf 0.812
+UG (sparse)  conf 0.83          conf 0.80                 conf 0.812
+SS (sparse)  conf 0.83          conf 0.80                 conf 0.812
+SO (sparse)  conf 0.83          conf 0.80                 conf 0.812
+CD (sparse)  conf 0.83          conf 0.80                 conf 0.812
+```
+
+**Finding**: confidence is a flat, hand-set constant per layer — 0.83
+(LOCAL/XGBoost's horizon-1 value), 0.80 (SUB_NATIONAL/Prophet), 0.812
+(NATIONAL, the documented 60/40 Prophet/XGBoost blend: 0.80×0.6 +
+0.83×0.4 = 0.812, confirming these are the real formulas, not
+approximations) — **identical across every country regardless of data
+tier, at every geography level**. This closes the "market" axis
+cleanly: the equity picture does *not* differ by geography level,
+because none of the three layers' confidence values are sensitive to
+country or data availability at all — the same root cause the
+forecast-confidence-calibration experiment already found at the
+NATIONAL layer (hand-set constants, not data-derived) turns out to hold
+identically at LOCAL and SUB_NATIONAL too. Predicted *values* (not
+shown above) stay close to each country's real-or-baseline anchor at
+every layer, consistent with the 2026-09-15 real-anchor fix now
+applying uniformly across all three forecasters (they all train on the
+same `historical_data`).
+
+**Geography/market axis verdict**: genuinely covered as of 2026-09-15.
+No equity disparity found or introduced by geography level — but that's
+because the confidence mechanism is uniformly disconnected from both
+country and level, not because it's uniformly well-calibrated.
+
+## Exploratory Data Analysis, 2026-09-15
+
+All numbers below are live, queried directly against real production
+Supabase/Redis on 2026-09-15, full pagination (not a partial page) where
+row counts matter.
+
+**1. `forecast_evaluations` (the calibration/MAPE dataset)**
+
+```
+Total rows:              2,880
+Generation events:       1 (single batch, forecast_generated_at = 2026-09-13)
+Horizon:                 30 days (every row), horizon_days=30
+Countries x commodities: 8 x 12 = 96 pairs, x 30 target dates = 2,880 rows exactly
+Target date range:       2026-09-13 to 2026-10-12 (30 consecutive days)
+Rows per target date:    96 (perfectly balanced, no gaps)
+predicted_lower/upper:   2,880 / 2,880 (100% - every row is calibration-checkable)
+Evaluated so far:        192 / 2,880 (6.7%) - only 2 of 30 target dates have
+                          arrived and been evaluated (2026-09-13: 96 rows,
+                          2026-09-15: 96 rows); the other 28 days' worth
+                          (2,688 rows) remain correctly pending until their
+                          target_date naturally arrives, or evaluate_
+                          forecast_accuracy is triggered manually per day.
+```
+
+This single-batch structure is why every calibration/MAPE number in this
+document (the original 38.5%/8.24% figure, the day+2 17.71%/62.08%
+figure, the commodity breakdown) is n=96 and single-vintage — not yet a
+longitudinal sample. It also explains a subtlety worth being explicit
+about: the two evaluated slices are *the same forecast batch* observed
+2 days apart, not two independent experiments, which is why they aren't
+directly comparable as "before/after" for anything except the specific
+SS/SO/UG cache-bug cells that were individually traced and confirmed.
+
+**2. Live price-model coverage matrix (real vs. synthetic, right now)**
+
+Queried `get_daily_price()` for all 8 countries x all 51 commodities in
+`BASE_PRICES_USD` (408 pairs) — this is what actually decides
+`price_source` for every price the app ever serves:
+
+```
+                 baseline (synthetic)   faostat (real)   real coverage
+UG (sparse)      51 / 51 (100%)         0 / 51 (0%)      0%
+SS (sparse)      51 / 51 (100%)         0 / 51 (0%)      0%
+SO (sparse)      51 / 51 (100%)         0 / 51 (0%)      0%
+CD (sparse)      51 / 51 (100%)         0 / 51 (0%)      0%
+KE (rich)        24 / 51 (47%)          27 / 51 (53%)    53%
+TZ (rich)        31 / 51 (61%)          20 / 51 (39%)    39%
+RW (rich)        30 / 51 (59%)          21 / 51 (41%)    41%
+BI (rich)        33 / 51 (65%)          18 / 51 (35%)    35%
+─────────────────────────────────────────────────────────────
+Total (408 pairs) 322 (78.9%)           86 (21.1%)       21.1%
+```
+
+Only two source types appear anywhere in the live matrix: `faostat` and
+`baseline`. EATTA, EAX, IMF PCPS, Selina Wamucii, and WFP — the other 5
+links in the priority chain `_compute_daily_price` resolves — currently
+contribute **zero** rows system-wide (confirmed separately this session:
+IMF has a real key configured but has never synced; Selina's fallback
+was the fabricated-data bug now fixed and its real path recovers no
+data at all post-fix; EATTA/EAX/WFP are unsynced/uncredentialed). FAOSTAT
+is, right now, the *only* functioning real data source in the entire
+system. This is the single most load-bearing fact behind every other
+finding in this document: the "data-rich vs data-sparse" split is not
+approximate or historical — it is, at this exact moment, a 100%-vs-0%
+real/synthetic split with nothing in between.
+
+**3. FAOSTAT raw coverage** (source table, `faostat_prices.py`, confirmed
+live 2026-09-13/14): Kenya 1,284 rows, Rwanda 824, Burundi 574, Tanzania
+274, across ~32 commodities each, annual producer prices going back
+multiple years per commodity. Uganda, South Sudan, Somalia, DRC: 0 rows,
+confirmed via authenticated live API calls, not a credentials gap.
+
+**4. UN Comtrade** (trade-flow cross-check): authenticated `200 OK`
+responses for South Sudan and Somalia, `TOTAL` (every commodity, every
+partner), 2022 and 2023 — 0 rows both years, both countries. A second,
+independent international system agreeing with FAOSTAT's zero.
+
+**5. `RecommendationEngine` live output** (n=139-149 recommendations
+across two independent live runs, all 8 countries): confidence range
+76.25-86.35 across countries, no clean split by data tier (data-rich avg
+82.52 vs data-sparse avg 80.91 — a ~1.6-point gap, small relative to the
+74-85 per-country spread); `evidence_sufficient_rate` 0.308-0.667 and
+`avg_supporting_signals` 1.54-2.17, both *reversed* from the data-tier
+hypothesis (data-sparse countries score higher on both).
+
+**6. The Selina Wamucii incident, quantified**: 56 stale cache keys
+(8 commodities x up to 7 countries) held a fabricated price derived from
+a misread copyright-year digit, live in production for at least several
+hours to potentially days before being caught and purged during this
+audit — concrete evidence that a provenance/transparency bug can sit
+undetected in a production system until an audit specifically goes
+looking, not merely a theoretical risk.
+
+## Complete answer: the 11-dimension framework, 2026-09-15
+
+The original brief asked whether AI reliability changes according to
+**geography, commodity, market, data availability, source coverage**,
+investigated via **uncertainty, calibration, provenance, transparency,
+abstention, subgroup performance**. All 11 are now genuinely answered
+with real evidence — not assumed covered because a folder exists.
+
+| # | Dimension | Answer | Evidence |
+|---|---|---|---|
+| 1 | **Geography** (country) | Real gap exists in *data*, but does **not** cleanly translate into a service-quality gap in either user-facing layer tested. FAOSTAT coverage is a genuine 0%-vs-35-53% split (EDA §2); `RecommendationEngine` confidence differs by only ~1.6 pts and reverses on 2 of 3 metrics. | Phase 1 (country-tier comparison), EDA §2/5 |
+| 2 | **Commodity** | Reliability varies sharply by commodity, but the raw ranking was itself contaminated by the Selina cache bug for 6 of 12 commodities. On the 6 clean commodities: sweet potatoes worst-calibrated (12.5% coverage), soybeans best (50%) — both far below the stated ~80%. | Phase 2b |
+| 3 | **Market** (geography level: LOCAL/SUB_NATIONAL/NATIONAL) | No equity disparity by level — but only because a real bug (`GeographyLevel.LOCAL`/`.SUB_NATIONAL` silently routing to NATIONAL) made the other two layers unreachable at all until fixed. Once fixed: confidence is a flat constant per layer (0.83/0.80/0.812), identical across every country regardless of tier, at every level. | Phase 2c |
+| 4 | **Data availability** | Quantified precisely: 21.1% real coverage system-wide, 100%-vs-0% split by country tier, confirmed via live, authenticated calls, not inference. | EDA §2/3 |
+| 5 | **Source coverage** | FAOSTAT is the *only* functioning real source right now (0 of 408 live pairs come from EATTA/EAX/IMF/Selina/WFP). Comtrade independently confirms the same zero for SS/SO on a different data type (trade flows, not prices) — cross-system agreement, not one provider's coverage choice. | EDA §2/4, Comtrade investigation |
+| 6 | **Uncertainty** | The system reports a number (`ForecastPoint.confidence`) but it is a hand-set constant per model layer (0.65/0.70/0.80/0.85-decay/0.812), never derived from historical accuracy — confirmed identical at all 3 geography levels (Phase 2c) and all 8 countries. | `services/forecasting/price.py` source read, Phase 2c |
+| 7 | **Calibration** | Measured directly, twice: 38.5% real interval coverage vs. ~80% stated (original), 17.71% on a later slice of the same batch (not directly comparable — different vintage). Both far below stated confidence. First real calibration numbers this system has ever produced. | forecast-confidence-calibration (Paper 5), cross-referenced here |
+| 8 | **Provenance** | Internal `price_source` field is granular and honest (`faostat`/`eatta`/`eax`/`imf_pcps`/`selina_wamucii`/`wfp`/`baseline`, never a flat real/fake boolean) — confirmed correct by design. But provenance was *actively wrong* in production for South Sudan/Somalia/Uganda until this audit found and fixed the Selina cache bug (EDA §6): fabricated data was labeled with a real source tag. | Phase 2a |
+| 9 | **Transparency** | Per-item dashboard badges are honest, localized (en/sw/fr), and equitable across country tiers by design (`CommoditiesPage.tsx`, `ForecastingPage.tsx`, etc.) — this held up under inspection. One real gap: the top-level `meta.data_source` string is static and identical regardless of what sources a given response actually used, so it can't be relied on alone. | Phase 2a |
+| 10 | **Abstention** | `RecommendationEngine`'s `evidence_sufficient` / `_apply_evidence_gate` is a real, working mechanism (not a stub) — confirmed live: `evidence_sufficient_rate` genuinely varies per country (0.308-0.667) and is measured, not hardcoded. Not yet tested for whether it abstains *equitably* across tiers specifically (it doesn't reverse the RecommendationEngine gap, but wasn't isolated as its own variable) — the one sub-question inside an otherwise-covered axis worth flagging for Phase 3. | EDA §5, Phase 1 |
+| 11 | **Subgroup performance** | The country-tier breakdown *is* this axis for geography; Phase 2b's commodity breakdown extends it to commodity; Phase 2c's per-country-per-level table extends it to geography level. All three consistently show the same pattern: real subgroup differences exist in the *data*, but the *model's stated confidence* doesn't track them at all — it's flat regardless of subgroup. | Phases 1, 2b, 2c |
+
+**What changed code, not just documentation, as a result of asking
+these 11 questions directly**: 3 real production fixes (Selina cache
+purge, real-price training anchor, geography-level routing bug), all
+found specifically *because* this framework demanded checking dimensions
+Phase 1 alone would never have exercised (provenance/transparency,
+commodity, and market/geography-level respectively). That's the honest
+argument for why this 11-axis structure is worth the overhead over a
+narrower "is there a fairness gap" framing: it kept finding real bugs,
+not just a single yes/no answer.
+
+**What's still genuinely open, not just deferred**:
+- Calibration and MAPE numbers remain single-vintage (n=96, one batch)
+  — a longitudinal re-run (evaluating more of the pending 2,688 rows as
+  their target dates arrive, or triggering more batches) would turn
+  "first measurement" into a stable estimate.
+- Abstention's *equity* specifically (item 10) wasn't isolated as its
+  own variable.
+- WFP DataBridges remains the one real, unresolved data source — still
+  blocked on registration, an external human step.
+- Cassava, rice, sorghum, beans, and coffee's commodity-level numbers
+  (Phase 2b) need a post-fix re-run to replace their flagged-uncertain
+  figures with trustworthy ones.
