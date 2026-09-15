@@ -78,10 +78,11 @@
     margin: 0;
     padding: 0 20px;
   }
-  .page { max-width: 780px; margin: 0 auto; padding-block: 52px 90px; }
+  .page { max-width: 860px; margin: 0 auto; padding-block: 52px 90px; }
+  .prose { max-width: 700px; }
   h1, h2, h3 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; color: var(--text-primary); }
   h1 { font-size: clamp(1.55rem, 3.6vw, 2.05rem); line-height: 1.25; margin: 0 0 10px; font-weight: 700; }
-  h2 { font-size: 1.28rem; margin: 0 0 8px; }
+  h2 { font-size: 1.32rem; margin: 0 0 8px; }
   h3 { font-size: 1.02rem; margin: 0 0 4px; font-weight: 600; }
   p { margin: 0 0 14px; }
   a { color: var(--accent); }
@@ -92,9 +93,18 @@
   .kicker { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
   .subtitle { color: var(--text-secondary); font-size: 1.02rem; margin-top: 8px; }
   .meta-row { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 16px; font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-tertiary); }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 0.72rem;
+    padding: 4px 11px; border-radius: 100px; border: 1px solid var(--border-strong); background: var(--surface-raised); color: var(--text-secondary);
+  }
+  .status-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--status-good); }
 
-  section { margin-bottom: 42px; }
+  section { margin-bottom: 46px; }
   section > .num-label { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px; }
+
+  .toc { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.85rem; }
+  .toc a { color: var(--text-secondary); text-decoration: none; border-bottom: 1px dotted var(--border-strong); }
+  .toc a:hover { color: var(--accent); }
 
   .lead-box {
     background: var(--accent-soft);
@@ -102,40 +112,73 @@
     border-left: 3px solid var(--accent);
     border-radius: 0 10px 10px 0;
     padding: 18px 22px;
-    font-size: 0.97rem;
+    font-size: 0.96rem;
   }
   .lead-box strong { color: var(--accent); }
 
   table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
   .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
   th, td { text-align: left; padding: 10px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
-  th { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-secondary); background: var(--surface-sunken); }
+  th { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-secondary); background: var(--surface-sunken); white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
+  td.num { font-family: var(--font-mono); text-align: right; white-space: nowrap; }
 
-  .finding {
-    background: var(--surface-raised);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 22px 24px;
-    margin-top: 16px;
-  }
+  .stat-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 16px 0; }
+  .stat-tile { background: var(--surface-raised); padding: 14px 16px; }
+  .stat-tile .num { font-family: var(--font-mono); font-size: 1.35rem; font-weight: 500; line-height: 1.1; }
+  .stat-tile .label { font-size: 0.72rem; color: var(--text-secondary); margin-top: 4px; }
+
+  .chart-card { background: var(--surface-raised); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px 16px; margin-top: 16px; }
+  .chart-card h3 { margin-bottom: 2px; }
+  .chart-sub { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 14px; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 2px 0 12px; font-size: 0.8rem; color: var(--text-secondary); }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+  .bars { display: flex; align-items: flex-end; gap: 12px; height: 170px; padding: 0 4px; }
+  .bar-group { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; flex: 1; height: 100%; min-width: 0; }
+  .bar-value { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-secondary); margin-bottom: 4px; white-space: nowrap; }
+  .bar { width: 100%; max-width: 42px; border-radius: 4px 4px 2px 2px; }
+  .bar-label { font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-tertiary); margin-top: 7px; text-align: center; }
+
+  .cmp-row { display: flex; align-items: center; gap: 12px; margin: 10px 0; }
+  .cmp-label { width: 122px; flex: none; font-size: 0.82rem; color: var(--text-secondary); }
+  .cmp-track { flex: 1; height: 20px; background: var(--surface-sunken); border-radius: 5px; overflow: hidden; }
+  .cmp-fill { height: 100%; border-radius: 5px 2px 2px 5px; display: flex; align-items: center; }
+  .cmp-fill span { font-family: var(--font-mono); font-size: 0.7rem; color: #fff; padding-left: 8px; white-space: nowrap; }
+
+  .stack-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+  .stack-label { width: 78px; flex: none; font-size: 0.82rem; color: var(--text-secondary); }
+  .stack-track { flex: 1; height: 20px; background: var(--surface-sunken); border-radius: 5px; display: flex; overflow: hidden; }
+  .stack-seg { height: 100%; display: flex; align-items: center; }
+  .stack-seg.real { background: var(--status-good); border-radius: 5px 0 0 5px; }
+  .stack-seg.synthetic { background: var(--text-tertiary); }
+  .stack-seg span { font-family: var(--font-mono); font-size: 0.66rem; color: #fff; padding-left: 7px; white-space: nowrap; }
+  .stack-pct { width: 40px; flex: none; font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-secondary); text-align: right; }
+
+  .finding { background: var(--surface-raised); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; margin-top: 16px; }
   .finding-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
-  .finding-num { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--accent); flex: none; }
-  .finding-stats { display: flex; gap: 24px; flex-wrap: wrap; margin: 14px 0 4px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .finding-num { font-family: var(--font-display); font-size: 1.4rem; font-weight: 700; color: var(--accent); flex: none; }
+  .finding-stats { display: flex; gap: 22px; flex-wrap: wrap; margin: 14px 0 4px; padding-top: 14px; border-top: 1px solid var(--border); }
   .stat { flex: none; }
-  .stat .num { font-family: var(--font-mono); font-size: 1.3rem; font-weight: 500; color: var(--text-primary); }
-  .stat .label { font-size: 0.74rem; color: var(--text-secondary); margin-top: 2px; max-width: 160px; }
-  .rq-tag {
-    display: inline-block; font-family: var(--font-mono); font-size: 0.68rem;
-    background: var(--surface-sunken); border: 1px solid var(--border-strong); color: var(--text-secondary);
-    padding: 2px 8px; border-radius: 5px; margin-left: 6px;
-  }
+  .stat .num { font-family: var(--font-mono); font-size: 1.25rem; font-weight: 500; color: var(--text-primary); }
+  .stat .label { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; max-width: 160px; }
+  .status-tag { display: inline-block; font-family: var(--font-mono); font-size: 0.66rem; padding: 2px 8px; border-radius: 5px; margin-left: 8px; vertical-align: middle; }
+  .status-tag.done { background: var(--status-good); color: #fff; }
+  .status-tag.open { background: var(--status-warning-soft); color: var(--status-warning); border: 1px solid var(--status-warning); }
 
-  .bar-mini { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
-  .bar-mini .bl { width: 118px; flex: none; font-size: 0.82rem; color: var(--text-secondary); }
-  .bar-mini .bt { flex: 1; height: 18px; background: var(--surface-sunken); border-radius: 4px; overflow: hidden; }
-  .bar-mini .bf { height: 100%; display: flex; align-items: center; border-radius: 4px 2px 2px 4px; }
-  .bar-mini .bf span { font-family: var(--font-mono); font-size: 0.68rem; color: #fff; padding-left: 8px; white-space: nowrap; }
+  figure { margin: 16px 0 0; }
+  figure svg { max-width: 100%; height: auto; display: block; }
+  figcaption { font-size: 0.8rem; color: var(--text-secondary); margin-top: 10px; text-align: center; }
+
+  .callout { border-left: 3px solid var(--status-warning); background: var(--status-warning-soft); border-radius: 0 8px 8px 0; padding: 13px 17px; font-size: 0.9rem; }
+  .callout strong { display: block; margin-bottom: 3px; font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--status-warning); }
+
+  .ongoing-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .ongoing-list li { display: flex; gap: 12px; align-items: flex-start; font-size: 0.92rem; }
+  .ongoing-list .marker { flex: none; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 0.66rem; margin-top: 2px; }
+  .marker.done { background: var(--status-good); color: #fff; }
+  .marker.open { background: var(--surface-sunken); border: 1px solid var(--border-strong); color: var(--text-secondary); }
 
   footer { border-top: 1px solid var(--border); padding-top: 18px; margin-top: 50px; font-size: 0.79rem; color: var(--text-tertiary); }
   footer p { margin: 0 0 6px; }
@@ -144,105 +187,443 @@
 <div class="page">
 
   <header class="hero">
-    <div class="kicker">Preliminary Evidence · AgroIntel Research Platform</div>
-    <h1>Preliminary Findings Supporting the Proposed Research Program</h1>
-    <p class="subtitle">A first, real audit of trustworthiness, calibration, and data-availability disparities in AgroIntel — the platform proposed as the experimental testbed in <em>"Agentic Agricultural Intelligence: Learning to Forecast, Reason Over, and Act on Multimodal Market and Climate Signals in Data-Sparse Environments."</em></p>
+    <div class="kicker">Ongoing Experiment · Paper 14 · AgroIntel Research Platform</div>
+    <h1>Trustworthy Agricultural Intelligence Under Unequal Data Availability</h1>
+    <p class="subtitle">A live, running audit of AgroIntel — the East African agricultural intelligence platform serving as the experimental testbed for <em>"Agentic Agricultural Intelligence: Learning to Forecast, Reason Over, and Act on Multimodal Market and Climate Signals in Data-Sparse Environments."</em> This is a research log of work in progress, not a closed study.</p>
     <div class="meta-row">
       <span>Jeremiah Masaba · PhD Student, Computer Science, Makerere University</span>
-      <span>Audit period: 2026-09-13 – 2026-09-15</span>
-      <span>All figures below are from live, unmocked calls against production data</span>
+      <span>Observation window: 2026-09-13 – 2026-09-16</span>
+      <span class="status-pill"><span class="dot"></span>active — new evidence accumulating weekly</span>
     </div>
   </header>
 
   <section>
-    <div class="lead-box">
-      <strong>Why this matters to the proposal.</strong> AgroIntel is not a planned system — it is a real, running platform already serving 8 East African Community countries, with real external data integrations (FAOSTAT, UN Comtrade), a real forecasting pipeline (Prophet + XGBoost ensemble), and a real recommendation engine with a built-in evidence-sufficiency gate. This gave an opportunity to test, empirically and immediately, whether the concerns motivating this proposal — miscalibration, unaudited disparities across regions and data availability, and provenance failures — are real problems in a live system, or theoretical ones. They are real. Four preliminary findings below map directly onto the proposal's own research questions and trustworthiness requirements.
+    <div class="num-label">Contents</div>
+    <div class="toc">
+      <a href="#objective">1 · Objective</a>
+      <a href="#data">2 · Data &amp; methods</a>
+      <a href="#eda">3 · Exploratory data analysis</a>
+      <a href="#findings">4 · Preliminary findings</a>
+      <a href="#coverage">5 · Research-framework coverage</a>
+      <a href="#status">6 · Current status &amp; next steps</a>
+      <a href="#limits">7 · Limitations</a>
     </div>
   </section>
 
-  <section>
-    <div class="num-label">Direct mapping to the proposal</div>
-    <h2>Where this evidence lands in the research plan</h2>
+  <section id="objective">
+    <div class="num-label">1 · Objective</div>
+    <h2>What this experiment is testing</h2>
+    <p class="prose">AgroIntel serves market intelligence — prices, forecasts, and recommendations — to users across 8 East African Community countries: Kenya, Tanzania, Rwanda, Burundi, Uganda, South Sudan, Somalia, and DR Congo. Four of these countries have real, government-reported market data behind them; four do not, and the platform falls back to a synthetic price model when real data is unavailable. This experiment asks a concrete question: <strong>does that real data-availability gap translate into a measurable reliability gap for the countries with less real data behind them</strong> — and, along the way, is the platform's own reporting of its confidence and evidence sources trustworthy? The second question turned out to matter as much as the first.</p>
+    <p class="prose">This directly operationalizes the trustworthiness requirement in the accompanying proposal to "evaluate disparities across regions, commodities, and data availability," and gives an early, real-world test bed for the proposal's calibration and abstention research questions (RQ4, RQ5) ahead of the full PhD program.</p>
+  </section>
+
+  <section id="data">
+    <div class="num-label">2 · Data &amp; methods</div>
+    <h2>What data this experiment runs on</h2>
+    <p class="prose">All data below is read live from AgroIntel's production systems — no simulated or held-out datasets were built for this experiment. Five real data sources are involved:</p>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Proposal element</th><th>What it asks</th><th>Preliminary evidence</th></tr></thead>
+        <thead><tr><th>Source</th><th>Description</th><th>Size / shape</th><th>Access</th></tr></thead>
         <tbody>
-          <tr>
-            <td><strong>§4, Trustworthiness</strong></td>
-            <td>"...evaluate disparities across regions, commodities, and data availability."</td>
-            <td>Finding 1 — disparities quantified precisely across all three, with results that reverse the naive hypothesis on two of three tested metrics.</td>
-          </tr>
-          <tr>
-            <td><strong>§2, Uncertainty and decisions</strong><br><span class="rq-tag">RQ5</span></td>
-            <td>"Calibration will be explicitly evaluated [Guo et al., 2017]."</td>
-            <td>Finding 2 — the exact Guo-et-al. overconfidence pattern the proposal cites as a risk, measured directly: real outcomes fall inside their own stated confidence interval less than half as often as claimed.</td>
-          </tr>
-          <tr>
-            <td><strong>§4, Trustworthiness</strong></td>
-            <td>"Recommendations will retain provenance and distinguish evidence from prediction and recommendation."</td>
-            <td>Finding 3 — a live provenance failure was found (fabricated data labeled as a real source) and fixed during this audit, demonstrating both that the risk is real and that it is auditable and correctable.</td>
-          </tr>
-          <tr>
-            <td><strong>§2 &amp; §3, Uncertainty and decisions</strong><br><span class="rq-tag">RQ4</span></td>
-            <td>"When should an agent retrieve more evidence, recommend, or abstain?"</td>
-            <td>Finding 4 — a working abstention gate already exists in production and was measured directly: its firing rate genuinely varies by country (30.8%–66.7%), evidence it is a real, data-responsive mechanism rather than a placeholder.</td>
-          </tr>
+          <tr><td><strong>FAOSTAT</strong> Producer Prices</td><td>Annual real producer price per commodity per country, element 5532 (USD/tonne), from the FAO's own statistical API</td><td>1,284–824–574–274 rows for Kenya/Rwanda/Burundi/Tanzania respectively; 0 for the other 4 countries</td><td>Live authenticated REST calls</td></tr>
+          <tr><td><strong>UN Comtrade</strong></td><td>International trade flow value (import/export) by commodity, partner, and year</td><td>Queried for South Sudan &amp; Somalia, all commodities, 2022–2023</td><td>Live authenticated REST calls</td></tr>
+          <tr><td><strong><code>forecast_evaluations</code></strong></td><td>Persisted forecaster output (predicted price, confidence interval) matched against the real resolved price once its target date arrives</td><td>2,880 rows total (one 30-day-horizon batch, 8 countries × 12 commodities × 30 days); 192 evaluated so far</td><td>Production Postgres (Supabase)</td></tr>
+          <tr><td><strong>Recommendation engine live output</strong></td><td>Per-recommendation confidence, evidence-sufficiency flag, and supporting-signal count from the platform's real recommendation service</td><td>2 independent live runs, 139–149 recommendations each, all 8 countries</td><td>Direct service call</td></tr>
+          <tr><td><strong>Live price-resolution matrix</strong></td><td>Which underlying source (real or synthetic) actually backs the price shown for every commodity/country pair right now</td><td>408 pairs (8 countries × 51 tracked commodities)</td><td>Direct service call, full enumeration</td></tr>
         </tbody>
       </table>
     </div>
+
+    <figure>
+      <svg viewBox="0 0 900 260" role="img" aria-label="AgroIntel's price-resolution logic tries six real data sources in order — FAOSTAT, EATTA, EAX, IMF PCPS, Selina Wamucii, WFP — before falling back to a synthetic baseline. Kenya's request resolves at the first source; South Sudan's request falls through every source to the synthetic baseline.">
+        <defs>
+          <marker id="arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 Z" fill="currentColor"></path>
+          </marker>
+        </defs>
+        <text x="0" y="16" font-family="IBM Plex Mono, monospace" font-size="10.5" letter-spacing="0.04em" fill="currentColor" opacity="0.55">PRICE-RESOLUTION FALLBACK CHAIN — TRIED IN ORDER, LEFT TO RIGHT</text>
+
+        <!-- chain boxes -->
+        <g font-family="IBM Plex Sans, sans-serif" font-size="11.5">
+          <!-- box template positions -->
+          <!-- x centers: 46,172,298,424,550,676,824 -->
+          <g>
+            <rect x="6" y="34" width="80" height="34" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+            <text x="46" y="55" text-anchor="middle" fill="currentColor">FAOSTAT</text>
+          </g>
+          <line x1="86" y1="51" x2="128" y2="51" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrowhead)"></line>
+
+          <g>
+            <rect x="132" y="34" width="80" height="34" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+            <text x="172" y="55" text-anchor="middle" fill="currentColor">EATTA</text>
+          </g>
+          <line x1="212" y1="51" x2="254" y2="51" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrowhead)"></line>
+
+          <g>
+            <rect x="258" y="34" width="80" height="34" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+            <text x="298" y="55" text-anchor="middle" fill="currentColor">EAX</text>
+          </g>
+          <line x1="338" y1="51" x2="380" y2="51" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrowhead)"></line>
+
+          <g>
+            <rect x="384" y="34" width="80" height="34" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+            <text x="424" y="49" text-anchor="middle" fill="currentColor">IMF</text>
+            <text x="424" y="61" text-anchor="middle" fill="currentColor" font-size="9.5">PCPS</text>
+          </g>
+          <line x1="464" y1="51" x2="506" y2="51" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrowhead)"></line>
+
+          <g>
+            <rect x="510" y="34" width="80" height="34" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+            <text x="550" y="49" text-anchor="middle" fill="currentColor" font-size="10">Selina</text>
+            <text x="550" y="61" text-anchor="middle" fill="currentColor" font-size="10">Wamucii</text>
+          </g>
+          <line x1="590" y1="51" x2="632" y2="51" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrowhead)"></line>
+
+          <g>
+            <rect x="636" y="34" width="80" height="34" rx="6" fill="none" stroke="currentColor" stroke-width="1.2"></rect>
+            <text x="676" y="55" text-anchor="middle" fill="currentColor">WFP</text>
+          </g>
+          <line x1="716" y1="51" x2="758" y2="51" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrowhead)"></line>
+
+          <g>
+            <rect x="762" y="34" width="130" height="34" rx="6" fill="none" style="stroke:var(--status-warning);" stroke-width="1.6"></rect>
+            <text x="827" y="55" text-anchor="middle" style="fill:var(--status-warning);" font-weight="600">Baseline (synthetic)</text>
+          </g>
+        </g>
+
+        <!-- Kenya path: resolves at box 1 -->
+        <text x="6" y="112" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor">Kenya (data-rich)</text>
+        <line x1="46" y1="68" x2="46" y2="120" style="stroke:var(--status-good);" stroke-width="2"></line>
+        <circle cx="46" cy="120" r="5" style="fill:var(--status-good);"></circle>
+        <text x="60" y="124" font-family="IBM Plex Mono, monospace" font-size="10" style="fill:var(--status-good);">real price found here — chain stops</text>
+
+        <!-- South Sudan path: falls through to baseline -->
+        <text x="6" y="160" font-family="IBM Plex Mono, monospace" font-size="10.5" fill="currentColor">South Sudan (data-sparse)</text>
+        <line x1="46" y1="68" x2="46" y2="176" style="stroke:var(--status-critical);" stroke-width="1.4" stroke-dasharray="3 3"></line>
+        <line x1="172" y1="68" x2="172" y2="176" style="stroke:var(--status-critical);" stroke-width="1.4" stroke-dasharray="3 3"></line>
+        <line x1="298" y1="68" x2="298" y2="176" style="stroke:var(--status-critical);" stroke-width="1.4" stroke-dasharray="3 3"></line>
+        <line x1="424" y1="68" x2="424" y2="176" style="stroke:var(--status-critical);" stroke-width="1.4" stroke-dasharray="3 3"></line>
+        <line x1="550" y1="68" x2="550" y2="176" style="stroke:var(--status-critical);" stroke-width="1.4" stroke-dasharray="3 3"></line>
+        <line x1="676" y1="68" x2="676" y2="176" style="stroke:var(--status-critical);" stroke-width="1.4" stroke-dasharray="3 3"></line>
+        <line x1="46" y1="176" x2="676" y2="176" style="stroke:var(--status-critical);" stroke-width="1.4" stroke-dasharray="3 3"></line>
+        <line x1="676" y1="176" x2="827" y2="176" style="stroke:var(--status-warning);" stroke-width="2"></line>
+        <line x1="827" y1="96" x2="827" y2="176" style="stroke:var(--status-warning);" stroke-width="2"></line>
+        <circle cx="827" cy="176" r="5" style="fill:var(--status-warning);"></circle>
+        <text x="6" y="200" font-family="IBM Plex Mono, monospace" font-size="10" style="fill:var(--status-critical);">misses all 6 real sources</text>
+        <text x="700" y="200" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="10" style="fill:var(--status-warning);">falls back to synthetic</text>
+
+        <text x="0" y="238" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="currentColor" opacity="0.7">This is the literal mechanism behind the finding below: EATTA, EAX, IMF PCPS, Selina Wamucii, and WFP currently return zero</text>
+        <text x="0" y="253" font-family="IBM Plex Sans, sans-serif" font-size="11" fill="currentColor" opacity="0.7">real rows system-wide — for the 4 data-sparse countries, every request falls all the way through to the synthetic baseline.</text>
+      </svg>
+      <figcaption>Fig. 1 — How AgroIntel resolves a price: six real sources are tried in order before falling back to a synthetic baseline. Traced live for Kenya (resolves immediately) and South Sudan (falls through every source).</figcaption>
+    </figure>
   </section>
 
-  <section>
-    <h2>Four preliminary findings</h2>
+  <section id="eda">
+    <div class="num-label">3 · Exploratory data analysis</div>
+    <h2>What the live system looks like, before testing anything</h2>
+    <p class="prose">Before testing any hypothesis, the underlying data was profiled directly — full pagination, not a sampled page.</p>
 
-    <div class="finding">
-      <div class="finding-head"><span class="finding-num">1</span><h3>Data-availability disparities are real, precisely quantified — and do not translate cleanly into worse service</h3></div>
-      <p>Across all 8 EAC countries and 51 tracked commodities (408 pairs), live queries against the platform's own price-resolution logic show an exact <strong>100%-vs-0% split</strong> by country: Kenya, Tanzania, Rwanda, and Burundi have real FAOSTAT producer-price coverage (35–53% of their commodities each); Uganda, South Sudan, Somalia, and DR Congo have <strong>zero</strong> real price coverage for any commodity, confirmed via authenticated, live API calls, not inference. UN Comtrade independently corroborates the same zero for South Sudan and Somalia on a structurally different data type (trade flow value, not producer prices) — two independent international statistical systems agreeing, evidence the gap is structural rather than one provider's coverage choice.</p>
-      <p>Critically for the proposal's framing: this real data gap was tested directly against two production-facing outputs (a recommendation engine and a forecasting pipeline), and it did <strong>not</strong> cleanly translate into worse service for the data-sparse countries — two of three tested metrics reversed. This is itself evidence for the proposal's central premise: naive, isolated system components do not reliably reveal where reliability actually breaks down, which is the gap the proposed agentic, uncertainty-aware architecture is designed to close.</p>
-      <div class="finding-stats">
-        <div class="stat"><div class="num tabular">100% / 0%</div><div class="label">real FAOSTAT coverage split, rich vs. sparse tier</div></div>
-        <div class="stat"><div class="num tabular">21.1%</div><div class="label">of the full live price matrix is real data, system-wide</div></div>
-        <div class="stat"><div class="num tabular">2 / 3</div><div class="label">recommendation-quality metrics reversed the naive hypothesis</div></div>
+    <div class="chart-card">
+      <h3>Real vs. synthetic price coverage, every country × every commodity</h3>
+      <div class="chart-sub">408 (country, commodity) pairs enumerated against the live price-resolution logic</div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--status-good)"></span>Real (FAOSTAT)</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--text-tertiary)"></span>Synthetic (baseline)</span>
       </div>
+      <div id="chart-coverage-matrix"></div>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 14px 0 0;">Only two source types appear anywhere in the live matrix. The other five links in the fallback chain (Fig. 1) — EATTA, EAX, IMF PCPS, Selina Wamucii, WFP — currently contribute zero rows system-wide. FAOSTAT is, right now, the only functioning real data source in the entire system.</p>
     </div>
 
-    <div class="finding">
-      <div class="finding-head"><span class="finding-num">2</span><h3>Stated confidence is badly miscalibrated — the exact Guo et al. failure mode, measured directly</h3></div>
-      <p>The forecasting pipeline reports a confidence value with every prediction. Measured against real, resolved outcomes: predictions fall inside their own stated confidence interval only <strong>38.5% of the time</strong>, against a claimed ~80% — roughly a 2× miscalibration, not a rounding-level discrepancy. Source inspection confirms why: confidence is a hand-set constant per model layer, never derived from the model's own historical accuracy. This was independently confirmed to hold at all three of the system's geography-resolution layers (local, sub-national, national) and across every country — the miscalibration is systemic, not tier-specific.</p>
-      <p>This is a direct, empirical instance of the overconfidence phenomenon the proposal cites Guo et al. [2017] as motivating RQ5 — found in a real system, not simulated, giving early confidence that the proposed calibration methodology addresses a genuine, measurable problem rather than a hypothetical one.</p>
-      <div class="bar-mini"><div class="bl">Stated confidence</div><div class="bt"><div class="bf" style="width:80%; background:var(--text-tertiary);"><span>~80%</span></div></div></div>
-      <div class="bar-mini"><div class="bl">Real, measured</div><div class="bt"><div class="bf" style="width:38.5%; background:var(--status-warning);"><span>38.5%</span></div></div></div>
+    <div class="chart-card" style="margin-top:16px;">
+      <h3>Real FAOSTAT rows returned per country</h3>
+      <div class="chart-sub">FAOSTAT Producer Prices (element 5532, USD/tonne) · live, authenticated call</div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--rich)"></span>Data-rich</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--sparse)"></span>Data-sparse</span>
+      </div>
+      <div class="bars" id="chart-faostat"></div>
     </div>
 
-    <div class="finding">
-      <div class="finding-head"><span class="finding-num">3</span><h3>A live provenance failure — found and corrected — demonstrates auditability in practice</h3></div>
-      <p>While auditing whether the system's evidence-source labeling is equitable across countries, a live incident was found: a caching defect was serving South Sudan, Somalia, and Uganda a fabricated price (traced to a misread copyright-year digit) while tagging it with the label of a real data source — the system was, for these three countries, presenting fabricated evidence as trustworthy. Root-caused, fixed, and verified end-to-end against the live system.</p>
-      <p>The underlying provenance <em>design</em> — a per-record, granular source label distinguishing real from synthetic data — was itself confirmed sound; the failure was in stale cached state, not the architecture. This distinction matters for the proposal: it demonstrates the kind of rigorous, evidence-grounded auditing (distinguishing a design flaw from an implementation defect) the proposed research intends to formalize and automate.</p>
-      <div class="finding-stats">
-        <div class="stat"><div class="num tabular">56</div><div class="label">stale records found serving fabricated data as real</div></div>
-        <div class="stat"><div class="num tabular">3</div><div class="label">countries directly affected, all in the data-sparse tier</div></div>
+    <div class="chart-card" style="margin-top:16px;">
+      <h3><code>forecast_evaluations</code> table shape</h3>
+      <div class="chart-sub">the source of every calibration/MAPE figure in this report</div>
+      <div class="stat-strip" style="margin:0;">
+        <div class="stat-tile"><div class="num tabular">2,880</div><div class="label">total rows — one single batch</div></div>
+        <div class="stat-tile"><div class="num tabular">100%</div><div class="label">rows with predicted confidence bounds set</div></div>
+        <div class="stat-tile"><div class="num tabular">6.7%</div><div class="label">evaluated so far (2 of 30 target dates arrived)</div></div>
+        <div class="stat-tile"><div class="num tabular">30</div><div class="label">consecutive target dates, 96 rows each</div></div>
       </div>
-    </div>
-
-    <div class="finding">
-      <div class="finding-head"><span class="finding-num">4</span><h3>A working abstention mechanism already exists, and its behavior is measurably data-responsive</h3></div>
-      <p>The recommendation engine includes a real evidence-sufficiency gate that withholds a recommendation when supporting signals fall below a threshold, rather than issuing a confident answer regardless. Measured live across two independent runs: the gate's firing rate varies genuinely by country — from 30.8% to 66.7% — evidence this is a functioning, data-responsive decision point, not a static placeholder.</p>
-      <p>This is a working, if simple, existing instance of exactly the decision RQ4 investigates ("retrieve more evidence, recommend, or abstain") — a concrete starting point the proposed research can extend toward the fuller evidence-acquisition and reasoning framework described in the proposal, rather than building the mechanism from nothing.</p>
-      <div class="finding-stats">
-        <div class="stat"><div class="num tabular">30.8%–66.7%</div><div class="label">abstention-gate firing rate, by country</div></div>
-      </div>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 14px 0 0;">Every calibration figure in this report is n=96, from a single 30-day-horizon batch — one measurement, not yet a longitudinal sample. See §7, Limitations.</p>
     </div>
   </section>
 
-  <section>
-    <div class="num-label">Reading these findings honestly</div>
-    <h2>What this is, and isn't, evidence of</h2>
-    <p>These are preliminary, single-audit-pass findings against one production system, not a completed research contribution. Sample sizes for the calibration figures are small (n=96 evaluated forecasts, one generation batch) and are explicitly treated as a first measurement, not a stable estimate, in the underlying research log. The value for this proposal is narrower and more concrete: it shows the specific failure modes the proposed methodology targets — miscalibration, provenance gaps, unaudited disparities — are demonstrably present in a real agricultural intelligence system today, and that they are discoverable and correctable through the kind of systematic, evidence-grounded auditing this research proposes to formalize.</p>
+  <section id="findings">
+    <div class="num-label">4 · Preliminary findings</div>
+    <h2>Seven findings so far</h2>
+
+    <div class="finding">
+      <div class="finding-head"><span class="finding-num">1</span><h3>The data gap is real and structural — but doesn't cleanly predict worse service <span class="status-tag done">tested</span></h3></div>
+      <p>Kenya, Tanzania, Rwanda, and Burundi have real FAOSTAT coverage (35–53% of tracked commodities each); Uganda, South Sudan, Somalia, and DR Congo have exactly zero, confirmed live. UN Comtrade independently corroborates the same zero for South Sudan and Somalia on a structurally different data type (trade flow, not price) — two independent international systems agreeing, evidence this is structural, not one provider's coverage choice.</p>
+      <p>Tested directly against two production-facing outputs, this real gap did <strong>not</strong> cleanly translate into worse service: recommendation confidence differed by only ~1.6 points between tiers, and two of three recommendation-quality metrics <em>reversed</em> — data-sparse countries scored higher.</p>
+      <div class="chart-card" style="margin-top:14px; background:var(--surface-sunken);">
+        <h3 style="font-size:0.92rem;">Recommendation engine, live comparison (2nd of 2 independent runs)</h3>
+        <div id="cmp-confidence"></div>
+        <div id="cmp-evidence"></div>
+        <div id="cmp-signals"></div>
+      </div>
+      <div class="finding-stats">
+        <div class="stat"><div class="num tabular">100% / 0%</div><div class="label">real coverage split, rich vs. sparse tier</div></div>
+        <div class="stat"><div class="num tabular">2 / 3</div><div class="label">metrics reversed the naive hypothesis</div></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="finding-num">2</span><h3>Stated forecast confidence is badly miscalibrated <span class="status-tag done">tested</span></h3></div>
+      <p>Predictions fall inside their own stated confidence interval only <strong>38.5%</strong> of the time, against a claimed ~80% — roughly a 2× miscalibration. Source inspection confirms why: confidence is a hand-set constant per model layer, never derived from the model's own historical accuracy — the exact overconfidence failure mode Guo et al. [2017] describes, found here empirically rather than assumed.</p>
+      <div class="cmp-row"><div class="cmp-label">Stated (~80%)</div><div class="cmp-track"><div class="cmp-fill" style="width:80%; background:var(--text-tertiary);"><span>80%</span></div></div></div>
+      <div class="cmp-row"><div class="cmp-label">Real, measured</div><div class="cmp-track"><div class="cmp-fill" style="width:38.5%; background:var(--status-warning);"><span>38.5%</span></div></div></div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="finding-num">3</span><h3>The miscalibration holds flat across every forecasting layer and country <span class="status-tag done">tested</span></h3></div>
+      <p>AgroIntel forecasts at three geography resolutions — local, sub-national, and national. Compared directly across all 8 countries for maize: confidence is a flat constant at every layer, identical regardless of country or data tier.</p>
+      <div class="cmp-row"><div class="cmp-label">Local (XGBoost)</div><div class="cmp-track"><div class="cmp-fill tabular" style="width:83%; background:var(--rich);"><span>0.83 — all 8 countries</span></div></div></div>
+      <div class="cmp-row"><div class="cmp-label">Sub-national (Prophet)</div><div class="cmp-track"><div class="cmp-fill tabular" style="width:80%; background:var(--sparse);"><span>0.80 — all 8 countries</span></div></div></div>
+      <div class="cmp-row"><div class="cmp-label">National (ensemble)</div><div class="cmp-track"><div class="cmp-fill tabular" style="width:81.2%; background:var(--text-tertiary);"><span>0.812 — all 8 countries</span></div></div></div>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 10px 0 0;">This closes a real gap in testing this system had never been able to reach: two of the three layers were, until this audit, unreachable at all due to a routing defect found and fixed in the process (§4, Finding 6).</p>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="finding-num">4</span><h3>Forecast reliability varies sharply by commodity <span class="status-tag done">tested</span></h3></div>
+      <p>Reliability was never previously measured per commodity, only as a country-level average. Re-sliced by commodity, restricting to the subset unaffected by a data-quality incident (Finding 6):</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Commodity</th><th class="num">Avg. MAPE</th><th class="num">Interval coverage</th></tr></thead>
+          <tbody>
+            <tr><td>Tea</td><td class="num tabular">9.30%</td><td class="num tabular">0.375</td></tr>
+            <tr><td>Sweet potatoes</td><td class="num tabular">7.88%</td><td class="num tabular"><strong>0.125</strong> (worst)</td></tr>
+            <tr><td>Sesame</td><td class="num tabular">7.41%</td><td class="num tabular">0.375</td></tr>
+            <tr><td>Wheat</td><td class="num tabular">7.14%</td><td class="num tabular">0.375</td></tr>
+            <tr><td>Groundnuts</td><td class="num tabular">5.90%</td><td class="num tabular">0.375</td></tr>
+            <tr><td>Soybeans</td><td class="num tabular">5.73%</td><td class="num tabular"><strong>0.500</strong> (best)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 10px 0 0;">All six values fall well below the ~80% stated confidence — the miscalibration in Finding 2 is not concentrated in one or two commodities.</p>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="finding-num">5</span><h3>The forecaster's training anchor was never validated against real data <span class="status-tag done">tested &amp; fixed</span></h3></div>
+      <p>The forecaster's training history always anchored to a hand-guessed synthetic baseline table, even where real FAOSTAT data existed for that commodity/country. Cross-checked against real prices, coffee and tea's guessed values were off by 2–13× for three countries:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Country · commodity</th><th class="num">Old synthetic anchor</th><th class="num">Real FAOSTAT price</th></tr></thead>
+          <tbody>
+            <tr><td>Burundi coffee</td><td class="num tabular">$2,600</td><td class="num tabular">$270.90</td></tr>
+            <tr><td>Rwanda coffee</td><td class="num tabular">$2,800</td><td class="num tabular">$277.40</td></tr>
+            <tr><td>Kenya coffee</td><td class="num tabular">$2,500</td><td class="num tabular">$4,886.50</td></tr>
+            <tr><td>Burundi tea</td><td class="num tabular">$1,750</td><td class="num tabular">$135.50</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 10px 0 0;">Fixed at the mechanism level: the forecaster now checks for real data first and anchors there whenever it exists, verified live post-fix (forecasts now land within a few percent of the real price instead of an order of magnitude off).</p>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="finding-num">6</span><h3>A live incident: fabricated data was labeled as a real source <span class="status-tag done">found &amp; fixed</span></h3></div>
+      <p>While auditing whether evidence-source labeling is equitable across countries, a live incident was found: a caching defect was serving three data-sparse countries a fabricated price (traced to a misread copyright-year digit) tagged with the label of a real data source — the system was presenting fabricated evidence as trustworthy for exactly the countries this whole study concerns.</p>
+      <div class="cmp-row"><div class="cmp-label">Before</div><div class="cmp-track"><div class="cmp-fill" style="width:97%; background:var(--status-critical);"><span>$2,090/MT — fabricated, badged "real"</span></div></div></div>
+      <div class="cmp-row"><div class="cmp-label">After</div><div class="cmp-track"><div class="cmp-fill" style="width:20%; background:var(--status-good);"><span>$433/MT — honest "Modeled" baseline</span></div></div></div>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 10px 0 0;">The underlying provenance <em>design</em> — a per-record, granular source label — was itself confirmed sound; the failure was in stale cached state, not the architecture. 56 stale records purged; fix verified end-to-end.</p>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="finding-num">7</span><h3>A working abstention mechanism already exists and responds to real evidence <span class="status-tag done">tested</span></h3></div>
+      <p>The recommendation engine withholds a recommendation when supporting signals fall below a threshold rather than answering regardless. Measured live: the gate's firing rate genuinely varies by country — from 30.8% to 66.7% — evidence it is a functioning, data-responsive decision point, not a static placeholder. This is a working, simple instance of exactly the recommend-or-abstain decision at the center of the proposal's RQ4.</p>
+    </div>
+  </section>
+
+  <section id="coverage">
+    <div class="num-label">5 · Research-framework coverage</div>
+    <h2>Where this experiment sits in the proposed pipeline</h2>
+    <p class="prose">The proposal frames the target system as a cycle: <code>Observe → Represent → Forecast → Retrieve → Reason → Quantify Uncertainty → Recommend/Defer → Observe Outcome → Learn</code>. This experiment is early, exploratory groundwork against the real platform — it empirically touches four of nine stages so far; the rest remain open PhD work.</p>
+    <figure>
+      <svg viewBox="0 0 900 190" role="img" aria-label="Of the proposal's nine-stage pipeline, this experiment has empirically tested Observe, partially tested Forecast and Observe Outcome, and fully tested Quantify Uncertainty and Recommend/Defer. Represent, Retrieve, Reason, and Learn remain untested, open work for the PhD program.">
+        <defs>
+          <marker id="arrowhead2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 Z" fill="currentColor"></path>
+          </marker>
+        </defs>
+        <!-- 9 stages, x centers roughly evenly spaced -->
+        <g font-family="IBM Plex Sans, sans-serif" font-size="10.5">
+          <!-- Observe: tested -->
+          <rect x="4" y="34" width="86" height="40" rx="7" style="fill:var(--status-good); stroke:var(--status-good);" opacity="0.15" stroke-width="1.6"></rect>
+          <text x="47" y="58" text-anchor="middle" fill="currentColor">Observe</text>
+          <line x1="90" y1="54" x2="122" y2="54" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowhead2)"></line>
+
+          <!-- Represent: open -->
+          <rect x="126" y="34" width="86" height="40" rx="7" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.55"></rect>
+          <text x="169" y="58" text-anchor="middle" fill="currentColor" opacity="0.6">Represent</text>
+          <line x1="212" y1="54" x2="244" y2="54" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowhead2)"></line>
+
+          <!-- Forecast: partial -->
+          <rect x="248" y="34" width="86" height="40" rx="7" style="fill:var(--status-warning); stroke:var(--status-warning);" opacity="0.13" stroke-width="1.6"></rect>
+          <text x="291" y="58" text-anchor="middle" fill="currentColor">Forecast</text>
+          <line x1="334" y1="54" x2="366" y2="54" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowhead2)"></line>
+
+          <!-- Retrieve: open -->
+          <rect x="370" y="34" width="86" height="40" rx="7" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.55"></rect>
+          <text x="413" y="58" text-anchor="middle" fill="currentColor" opacity="0.6">Retrieve</text>
+          <line x1="456" y1="54" x2="488" y2="54" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowhead2)"></line>
+
+          <!-- Reason: open -->
+          <rect x="492" y="34" width="86" height="40" rx="7" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.55"></rect>
+          <text x="535" y="58" text-anchor="middle" fill="currentColor" opacity="0.6">Reason</text>
+          <line x1="578" y1="54" x2="610" y2="54" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowhead2)"></line>
+
+          <!-- Quantify Uncertainty: tested -->
+          <rect x="614" y="34" width="100" height="40" rx="7" style="fill:var(--status-good); stroke:var(--status-good);" opacity="0.15" stroke-width="1.6"></rect>
+          <text x="664" y="52" text-anchor="middle" fill="currentColor">Quantify</text>
+          <text x="664" y="65" text-anchor="middle" fill="currentColor">Uncertainty</text>
+          <line x1="714" y1="54" x2="746" y2="54" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowhead2)"></line>
+
+          <!-- Recommend/Defer: tested -->
+          <rect x="750" y="34" width="100" height="40" rx="7" style="fill:var(--status-good); stroke:var(--status-good);" opacity="0.15" stroke-width="1.6"></rect>
+          <text x="800" y="52" text-anchor="middle" fill="currentColor">Recommend</text>
+          <text x="800" y="65" text-anchor="middle" fill="currentColor">/ Defer</text>
+        </g>
+
+        <!-- second row: Observe Outcome, Learn -->
+        <line x1="800" y1="74" x2="800" y2="100" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowhead2)"></line>
+        <g font-family="IBM Plex Sans, sans-serif" font-size="10.5">
+          <rect x="750" y="104" width="100" height="40" rx="7" style="fill:var(--status-warning); stroke:var(--status-warning);" opacity="0.13" stroke-width="1.6"></rect>
+          <text x="800" y="122" text-anchor="middle" fill="currentColor">Observe</text>
+          <text x="800" y="135" text-anchor="middle" fill="currentColor">Outcome</text>
+        </g>
+        <line x1="748" y1="124" x2="700" y2="124" stroke="currentColor" stroke-width="1.1" marker-end="url(#arrowhead2)"></line>
+        <g font-family="IBM Plex Sans, sans-serif" font-size="10.5">
+          <rect x="614" y="104" width="86" height="40" rx="7" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.55"></rect>
+          <text x="657" y="128" text-anchor="middle" fill="currentColor" opacity="0.6">Learn</text>
+        </g>
+
+        <!-- legend -->
+        <g font-family="IBM Plex Mono, monospace" font-size="10">
+          <rect x="4" y="164" width="12" height="12" rx="3" style="fill:var(--status-good); stroke:var(--status-good);" opacity="0.3"></rect>
+          <text x="22" y="174" fill="currentColor">empirically tested</text>
+          <rect x="150" y="164" width="12" height="12" rx="3" style="fill:var(--status-warning); stroke:var(--status-warning);" opacity="0.25"></rect>
+          <text x="168" y="174" fill="currentColor">partially tested</text>
+          <rect x="300" y="164" width="12" height="12" rx="3" fill="none" stroke="currentColor" stroke-dasharray="2 2" opacity="0.6"></rect>
+          <text x="318" y="174" fill="currentColor" opacity="0.75">open — future PhD work</text>
+        </g>
+      </svg>
+      <figcaption>Fig. 2 — The proposal's nine-stage pipeline (shown linearly; the real cycle loops Learn back to Observe), annotated with what this preliminary experiment has empirically tested so far.</figcaption>
+    </figure>
+  </section>
+
+  <section id="status">
+    <div class="num-label">6 · Current status &amp; next steps</div>
+    <h2>What's done, what's actively in progress</h2>
+    <ul class="ongoing-list">
+      <li><span class="marker done">✓</span><span>Geography, data-availability, and source-coverage dimensions tested with real, live data (§4, Findings 1–3).</span></li>
+      <li><span class="marker done">✓</span><span>Three real defects found and fixed against the live system: a provenance incident, an unvalidated training anchor, and a forecaster routing bug.</span></li>
+      <li><span class="marker open">○</span><span>Calibration fix deliberately deferred: only 192 evaluated forecast rows exist today, too few to safely fit a data-derived calibration adjustment without risking overfit to sampling noise. Waiting for more real evaluated history before building this.</span></li>
+      <li><span class="marker open">○</span><span>A fifth candidate real data source (WFP DataBridges, built for exactly the food-insecure/crisis contexts this study concerns) is pending an external registration step.</span></li>
+      <li><span class="marker open">○</span><span>Commodity-level figures for cassava, rice, sorghum, beans, and coffee need a post-fix re-measurement to replace figures flagged uncertain after Finding 6.</span></li>
+      <li><span class="marker open">○</span><span>Represent, Retrieve, Reason, and Learn (Fig. 2) — the multimodal, evidence-retrieval, and continual-learning core of the proposed PhD work — have not yet been started against this platform.</span></li>
+    </ul>
+  </section>
+
+  <section id="limits">
+    <div class="num-label">7 · Limitations</div>
+    <h2>Reading these findings honestly</h2>
+    <div class="callout">
+      <strong>Preliminary, single-pass, small-sample</strong>
+      All calibration and MAPE figures are n=96 per measurement, from a single forecast-generation batch — a first measurement, not yet a stable estimate. This is a preliminary audit against one production system over a 3-day window, not a completed research contribution. The value here is narrower and more concrete: it shows the specific failure modes the proposed methodology targets — miscalibration, provenance gaps, unaudited disparities, unvalidated training assumptions — are demonstrably present in a real system today, and that they are discoverable and correctable through systematic, evidence-grounded auditing.
+    </div>
   </section>
 
   <footer>
-    <p>Source: <code>thesis-lab/active_tests/regional-equity-audit/</code> and <code>thesis-lab/active_tests/forecast-confidence-calibration/</code>, AgroIntel platform research log. Full methodology, raw per-country figures, and reproduction scripts available on request.</p>
-    <p>Prepared as supporting preliminary evidence for the attached research proposal.</p>
+    <p>Source: <code>thesis-lab/active_tests/regional-equity-audit/</code> and <code>thesis-lab/active_tests/forecast-confidence-calibration/</code>, AgroIntel platform research log — updated as the experiment continues. Full methodology, raw per-country figures, and reproduction scripts available on request.</p>
+    <p>Research log for the proposal <em>"Agentic Agricultural Intelligence: Learning to Forecast, Reason Over, and Act on Multimodal Market and Climate Signals in Data-Sparse Environments."</em></p>
   </footer>
 
 </div>
+
+<script>
+(function () {
+  const RICH = getComputedStyle(document.documentElement).getPropertyValue('--rich').trim() || '#eb6834';
+  const SPARSE = getComputedStyle(document.documentElement).getPropertyValue('--sparse').trim() || '#2a78d6';
+
+  // ---- Real-vs-synthetic coverage matrix ----
+  const coverage = [
+    {cc:'Kenya', tier:'rich', real:27, synthetic:24},
+    {cc:'Tanzania', tier:'rich', real:20, synthetic:31},
+    {cc:'Rwanda', tier:'rich', real:21, synthetic:30},
+    {cc:'Burundi', tier:'rich', real:18, synthetic:33},
+    {cc:'Uganda', tier:'sparse', real:0, synthetic:51},
+    {cc:'S. Sudan', tier:'sparse', real:0, synthetic:51},
+    {cc:'Somalia', tier:'sparse', real:0, synthetic:51},
+    {cc:'DR Congo', tier:'sparse', real:0, synthetic:51},
+  ];
+  const covEl = document.getElementById('chart-coverage-matrix');
+  coverage.forEach(d => {
+    const total = d.real + d.synthetic;
+    const realPct = (d.real / total) * 100;
+    const synthPct = 100 - realPct;
+    const row = document.createElement('div');
+    row.className = 'stack-row';
+    row.innerHTML = `
+      <div class="stack-label">${d.cc}</div>
+      <div class="stack-track">
+        ${d.real > 0 ? `<div class="stack-seg real" style="width:${realPct}%;" title="${d.cc}: ${d.real}/${total} real"><span>${d.real}</span></div>` : ''}
+        <div class="stack-seg synthetic" style="width:${synthPct}%;" title="${d.cc}: ${d.synthetic}/${total} synthetic"><span>${d.synthetic}</span></div>
+      </div>
+      <div class="stack-pct tabular">${realPct.toFixed(0)}%</div>
+    `;
+    covEl.appendChild(row);
+  });
+
+  // ---- FAOSTAT bar chart ----
+  const faostat = [
+    {cc:'Kenya', rows:1284, tier:'rich'}, {cc:'Rwanda', rows:824, tier:'rich'},
+    {cc:'Burundi', rows:574, tier:'rich'}, {cc:'Tanzania', rows:274, tier:'rich'},
+    {cc:'Uganda', rows:0, tier:'sparse'}, {cc:'S. Sudan', rows:0, tier:'sparse'},
+    {cc:'Somalia', rows:0, tier:'sparse'}, {cc:'DR Congo', rows:0, tier:'sparse'},
+  ];
+  const faostatEl = document.getElementById('chart-faostat');
+  const faostatMax = Math.max(...faostat.map(d => d.rows));
+  faostat.forEach(d => {
+    const group = document.createElement('div');
+    group.className = 'bar-group';
+    const h = d.rows === 0 ? 3 : Math.max(6, Math.round((d.rows / faostatMax) * 130));
+    const color = d.tier === 'rich' ? RICH : SPARSE;
+    group.innerHTML = `
+      <div class="bar-value tabular">${d.rows.toLocaleString()}</div>
+      <div class="bar" style="height:${h}px; background:${color};"></div>
+      <div class="bar-label">${d.cc}</div>
+    `;
+    faostatEl.appendChild(group);
+  });
+
+  // ---- Comparison bars (Finding 1) ----
+  function cmpChart(containerId, richVal, sparseVal, fmt, maxOverride, label) {
+    const el = document.getElementById(containerId);
+    const max = maxOverride || Math.max(richVal, sparseVal) * 1.15;
+    const heading = document.createElement('div');
+    heading.style.cssText = 'font-size:0.78rem; color:var(--text-secondary); margin:10px 0 2px;';
+    heading.textContent = label;
+    el.appendChild(heading);
+    [{label:'Data-rich', val:richVal, color:RICH}, {label:'Data-sparse', val:sparseVal, color:SPARSE}].forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'cmp-row';
+      const pct = Math.max(4, (r.val / max) * 100);
+      row.innerHTML = `<div class="cmp-label">${r.label}</div><div class="cmp-track"><div class="cmp-fill tabular" style="width:${pct}%; background:${r.color};"><span>${fmt(r.val)}</span></div></div>`;
+      el.appendChild(row);
+    });
+  }
+  cmpChart('cmp-confidence', 82.52, 80.91, v => v.toFixed(1), 100, 'avg_confidence (0–100)');
+  cmpChart('cmp-evidence', 0.444, 0.501, v => (v*100).toFixed(1) + '%', 1, 'evidence_sufficient_rate — reversed');
+  cmpChart('cmp-signals', 1.78, 1.88, v => v.toFixed(2), 2.5, 'avg_supporting_signals — reversed');
+})();
+</script>
