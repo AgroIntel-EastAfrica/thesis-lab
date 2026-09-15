@@ -512,3 +512,79 @@ contaminated numbers as final.
 **Same n=96/single-day caveat as the calibration experiment applies**:
 one row per (country, commodity) pair, not a longitudinal sample —
 directionally informative, not a stable estimate.
+
+## Post-fix verification + a bigger real finding, 2026-09-15
+
+Set out to do the "next step" flagged above — re-run the evaluation now
+that the Selina cache is clean — and confirmed the cache-bug fix held:
+called `evaluate_forecast_accuracy` directly against real production
+Supabase. SS/SO/UG maize now show realistic, sane values (e.g. SS:
+predicted $383.91 vs actual $419.34; UG: predicted $304.67 vs actual
+$276.42) — no trace of the ~$2,000+/MT fabricated figures. The fix is
+confirmed durable, not just a one-time patch.
+
+**Important scoping note**: this batch (`target_date=2026-09-15`) turned
+out to be day+2 of a `horizon_days=30` batch generated 2026-09-13 — a
+*different* forecast vintage than whatever produced the original
+38.5%/8.24% calibration figure, not a clean "before vs after" pair.
+Its aggregate numbers (96 evaluated, calibration 17.71%, MAPE 62.08%)
+should **not** be read as "the fix made things worse" — they aren't
+comparable to the original figure at all. Recorded here for honesty,
+not presented as a fix-quality signal.
+
+**But investigating that jump surfaced a real, well-evidenced, bigger
+finding**: two commodities — coffee and tea — showed extreme,
+commodity-specific MAPE (243% and 272% respectively) in this batch,
+concentrated in exactly three countries: Rwanda, Burundi, and Kenya.
+Traced to source:
+
+```
+                 BASE_PRICES_USD        real FAOSTAT       ratio
+coffee  BI       $2,600 (guessed)   vs  ~$271-275/MT        ~9.5x over
+coffee  RW       $2,800 (guessed)   vs  ~$277-279/MT        ~10x over
+coffee  KE       $2,500 (guessed)   vs  ~$4,886-4,953/MT    ~2x under
+tea     BI       $1,750 (guessed)   vs  $136.66/MT          ~13x over
+tea     RW       $1,800 (guessed)   vs  $180.15/MT          ~10x over
+tea     KE       $1,400 (guessed)   vs  $2,194.40/MT        ~1.6x under
+maize   BI         $360 (guessed)   vs  ~$438.90/MT         ~1.2x under (for comparison)
+```
+
+Mechanism, confirmed by reading `services/forecasting/price.py`'s
+`get_price_forecast`: `PriceForecaster.fit()` trains *only* on
+`get_price_history()`, which is purely synthetic and anchors to
+`BASE_PRICES_USD` — a hand-guessed "realistic EAC wholesale price"
+table (per its own docstring) that has apparently **never been
+cross-checked against real data**. `evaluate_forecast_accuracy`'s
+`actual_price`, by contrast, comes from `get_daily_price()`, which
+prefers real FAOSTAT data whenever it exists. So wherever FAOSTAT
+happens to have real coverage for a commodity (coffee and tea for
+KE/RW/BI specifically — TZ and the data-sparse countries have no real
+FAOSTAT coffee/tea and show close predicted-vs-actual agreement,
+confirming the mechanism), the forecast is being evaluated against a
+real price the model was never trained anywhere near, because its
+synthetic training anchor for that commodity/country was never
+validated and turns out to be off by up to an order of magnitude.
+
+**Why this matters more than the original equity hypothesis**: this is
+the *inverse* of what Paper 14 set out to test. The concern was
+data-sparse countries getting worse service from missing real data.
+What's actually been found, now three times over (RecommendationEngine
+comparison in Phase 1, and now this), is that in places real data
+*does* exist, it can expose the synthetic fallback as badly wrong —
+making data-rich countries look worse on this specific metric, for a
+reason that has nothing to do with real-world forecasting difficulty
+and everything to do with an unvalidated hardcoded table. This is a
+genuine, real, actionable finding: `BASE_PRICES_USD`'s per-country
+values for coffee and tea specifically should be re-derived from real
+FAOSTAT levels (already synced, already in Redis) rather than left as
+the original hand-guessed estimates — maize's much smaller miss (~1.2x)
+shows this isn't true of every commodity, so a full commodity-by-
+commodity recalibration against already-available real data, not a
+blanket rewrite, is the right scoped fix. Not fixed as part of this
+pass — flagging as a real, concrete finding and a well-scoped follow-up
+action, consistent with this experiment's role as an audit, not a
+silent-fix pipeline.
+
+**Cross-reference**: this also bears directly on the
+forecast-confidence-calibration experiment's (Paper 5) hypothesis —
+noted there.

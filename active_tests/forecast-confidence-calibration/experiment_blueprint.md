@@ -116,3 +116,18 @@ more days of `evaluate_forecast_accuracy` running (once real deployment
 is confirmed, or via repeated manual triggers) before treating 38.5% as
 the final number for publication — but the direction (badly
 miscalibrated) is unlikely to reverse.
+
+**Related real finding, 2026-09-15** (full detail in
+`thesis-lab/active_tests/regional-equity-audit/experiment_blueprint.md`'s
+"Post-fix verification + a bigger real finding" section): a second,
+later evaluation batch surfaced a second, distinct source of
+miscalibration beyond the hand-set confidence constants this experiment
+targets — `BASE_PRICES_USD` (the synthetic training anchor
+`PriceForecaster.fit()` uses) turns out to be badly wrong for coffee
+and tea specifically in Rwanda and Burundi (off by ~10-13x from real
+FAOSTAT levels) and Kenya (off by ~2x, opposite direction), never
+having been cross-checked against real data. This means at least part
+of this system's real miscalibration is a bad training anchor, not
+just an uncalibrated confidence number — worth separating the two
+causes before concluding a fix (e.g. data-derived confidence) would
+close the whole gap on its own.
