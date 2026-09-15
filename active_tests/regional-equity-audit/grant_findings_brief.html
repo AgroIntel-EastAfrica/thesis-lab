@@ -1,0 +1,248 @@
+<title>AgroIntel Trustworthiness Audit</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    color-scheme: light;
+    --surface:        #fbf9f4;
+    --surface-raised:  #ffffff;
+    --surface-sunken:  #f2ede2;
+    --border:          #ddd4c2;
+    --border-strong:   #c7bba3;
+    --text-primary:    #1f1b16;
+    --text-secondary:  #6b6155;
+    --text-tertiary:   #948a7a;
+    --accent:          #2a5f4f;
+    --accent-soft:     #e2ebe6;
+    --rich:            #eb6834;
+    --sparse:          #2a78d6;
+    --status-warning:  #b8760a;
+    --status-warning-soft: #f6e6c8;
+    --status-critical: #c23b34;
+    --status-good:     #1a8f5c;
+    --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --font-body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface:         #1c1e1c;
+      --surface-raised:  #242724;
+      --surface-sunken:  #171917;
+      --border:          #3a3d3a;
+      --border-strong:   #4d504d;
+      --text-primary:    #f3f1ec;
+      --text-secondary:  #b5b0a6;
+      --text-tertiary:   #85806f;
+      --accent:          #5fae95;
+      --accent-soft:     #22322c;
+      --rich:            #e58455;
+      --sparse:          #5c9ceb;
+      --status-warning:  #d99a2b;
+      --status-warning-soft: #362b13;
+      --status-critical: #e0665e;
+      --status-good:     #3fb586;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface:         #1c1e1c;
+    --surface-raised:  #242724;
+    --surface-sunken:  #171917;
+    --border:          #3a3d3a;
+    --border-strong:   #4d504d;
+    --text-primary:    #f3f1ec;
+    --text-secondary:  #b5b0a6;
+    --text-tertiary:   #85806f;
+    --accent:          #5fae95;
+    --accent-soft:     #22322c;
+    --rich:            #e58455;
+    --sparse:          #5c9ceb;
+    --status-warning:  #d99a2b;
+    --status-warning-soft: #362b13;
+    --status-critical: #e0665e;
+    --status-good:     #3fb586;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--surface);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.62;
+    margin: 0;
+    padding: 0 20px;
+  }
+  .page { max-width: 780px; margin: 0 auto; padding-block: 52px 90px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 600; text-wrap: balance; color: var(--text-primary); }
+  h1 { font-size: clamp(1.55rem, 3.6vw, 2.05rem); line-height: 1.25; margin: 0 0 10px; font-weight: 700; }
+  h2 { font-size: 1.28rem; margin: 0 0 8px; }
+  h3 { font-size: 1.02rem; margin: 0 0 4px; font-weight: 600; }
+  p { margin: 0 0 14px; }
+  a { color: var(--accent); }
+  code { font-family: var(--font-mono); font-size: 0.87em; background: var(--surface-sunken); padding: 0.1em 0.4em; border-radius: 4px; color: var(--text-primary); }
+  .tabular { font-variant-numeric: tabular-nums; }
+
+  header.hero { border-bottom: 1px solid var(--border); padding-bottom: 26px; margin-bottom: 36px; }
+  .kicker { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  .subtitle { color: var(--text-secondary); font-size: 1.02rem; margin-top: 8px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 16px; font-family: var(--font-mono); font-size: 0.76rem; color: var(--text-tertiary); }
+
+  section { margin-bottom: 42px; }
+  section > .num-label { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 8px; }
+
+  .lead-box {
+    background: var(--accent-soft);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 18px 22px;
+    font-size: 0.97rem;
+  }
+  .lead-box strong { color: var(--accent); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+  th, td { text-align: left; padding: 10px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-secondary); background: var(--surface-sunken); }
+  tr:last-child td { border-bottom: none; }
+
+  .finding {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-top: 16px;
+  }
+  .finding-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+  .finding-num { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--accent); flex: none; }
+  .finding-stats { display: flex; gap: 24px; flex-wrap: wrap; margin: 14px 0 4px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .stat { flex: none; }
+  .stat .num { font-family: var(--font-mono); font-size: 1.3rem; font-weight: 500; color: var(--text-primary); }
+  .stat .label { font-size: 0.74rem; color: var(--text-secondary); margin-top: 2px; max-width: 160px; }
+  .rq-tag {
+    display: inline-block; font-family: var(--font-mono); font-size: 0.68rem;
+    background: var(--surface-sunken); border: 1px solid var(--border-strong); color: var(--text-secondary);
+    padding: 2px 8px; border-radius: 5px; margin-left: 6px;
+  }
+
+  .bar-mini { display: flex; align-items: center; gap: 10px; margin: 8px 0; }
+  .bar-mini .bl { width: 118px; flex: none; font-size: 0.82rem; color: var(--text-secondary); }
+  .bar-mini .bt { flex: 1; height: 18px; background: var(--surface-sunken); border-radius: 4px; overflow: hidden; }
+  .bar-mini .bf { height: 100%; display: flex; align-items: center; border-radius: 4px 2px 2px 4px; }
+  .bar-mini .bf span { font-family: var(--font-mono); font-size: 0.68rem; color: #fff; padding-left: 8px; white-space: nowrap; }
+
+  footer { border-top: 1px solid var(--border); padding-top: 18px; margin-top: 50px; font-size: 0.79rem; color: var(--text-tertiary); }
+  footer p { margin: 0 0 6px; }
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <div class="kicker">Preliminary Evidence · AgroIntel Research Platform</div>
+    <h1>Preliminary Findings Supporting the Proposed Research Program</h1>
+    <p class="subtitle">A first, real audit of trustworthiness, calibration, and data-availability disparities in AgroIntel — the platform proposed as the experimental testbed in <em>"Agentic Agricultural Intelligence: Learning to Forecast, Reason Over, and Act on Multimodal Market and Climate Signals in Data-Sparse Environments."</em></p>
+    <div class="meta-row">
+      <span>Jeremiah Masaba · PhD Student, Computer Science, Makerere University</span>
+      <span>Audit period: 2026-09-13 – 2026-09-15</span>
+      <span>All figures below are from live, unmocked calls against production data</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="lead-box">
+      <strong>Why this matters to the proposal.</strong> AgroIntel is not a planned system — it is a real, running platform already serving 8 East African Community countries, with real external data integrations (FAOSTAT, UN Comtrade), a real forecasting pipeline (Prophet + XGBoost ensemble), and a real recommendation engine with a built-in evidence-sufficiency gate. This gave an opportunity to test, empirically and immediately, whether the concerns motivating this proposal — miscalibration, unaudited disparities across regions and data availability, and provenance failures — are real problems in a live system, or theoretical ones. They are real. Four preliminary findings below map directly onto the proposal's own research questions and trustworthiness requirements.
+    </div>
+  </section>
+
+  <section>
+    <div class="num-label">Direct mapping to the proposal</div>
+    <h2>Where this evidence lands in the research plan</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Proposal element</th><th>What it asks</th><th>Preliminary evidence</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>§4, Trustworthiness</strong></td>
+            <td>"...evaluate disparities across regions, commodities, and data availability."</td>
+            <td>Finding 1 — disparities quantified precisely across all three, with results that reverse the naive hypothesis on two of three tested metrics.</td>
+          </tr>
+          <tr>
+            <td><strong>§2, Uncertainty and decisions</strong><br><span class="rq-tag">RQ5</span></td>
+            <td>"Calibration will be explicitly evaluated [Guo et al., 2017]."</td>
+            <td>Finding 2 — the exact Guo-et-al. overconfidence pattern the proposal cites as a risk, measured directly: real outcomes fall inside their own stated confidence interval less than half as often as claimed.</td>
+          </tr>
+          <tr>
+            <td><strong>§4, Trustworthiness</strong></td>
+            <td>"Recommendations will retain provenance and distinguish evidence from prediction and recommendation."</td>
+            <td>Finding 3 — a live provenance failure was found (fabricated data labeled as a real source) and fixed during this audit, demonstrating both that the risk is real and that it is auditable and correctable.</td>
+          </tr>
+          <tr>
+            <td><strong>§2 &amp; §3, Uncertainty and decisions</strong><br><span class="rq-tag">RQ4</span></td>
+            <td>"When should an agent retrieve more evidence, recommend, or abstain?"</td>
+            <td>Finding 4 — a working abstention gate already exists in production and was measured directly: its firing rate genuinely varies by country (30.8%–66.7%), evidence it is a real, data-responsive mechanism rather than a placeholder.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Four preliminary findings</h2>
+
+    <div class="finding">
+      <div class="finding-head"><span class="finding-num">1</span><h3>Data-availability disparities are real, precisely quantified — and do not translate cleanly into worse service</h3></div>
+      <p>Across all 8 EAC countries and 51 tracked commodities (408 pairs), live queries against the platform's own price-resolution logic show an exact <strong>100%-vs-0% split</strong> by country: Kenya, Tanzania, Rwanda, and Burundi have real FAOSTAT producer-price coverage (35–53% of their commodities each); Uganda, South Sudan, Somalia, and DR Congo have <strong>zero</strong> real price coverage for any commodity, confirmed via authenticated, live API calls, not inference. UN Comtrade independently corroborates the same zero for South Sudan and Somalia on a structurally different data type (trade flow value, not producer prices) — two independent international statistical systems agreeing, evidence the gap is structural rather than one provider's coverage choice.</p>
+      <p>Critically for the proposal's framing: this real data gap was tested directly against two production-facing outputs (a recommendation engine and a forecasting pipeline), and it did <strong>not</strong> cleanly translate into worse service for the data-sparse countries — two of three tested metrics reversed. This is itself evidence for the proposal's central premise: naive, isolated system components do not reliably reveal where reliability actually breaks down, which is the gap the proposed agentic, uncertainty-aware architecture is designed to close.</p>
+      <div class="finding-stats">
+        <div class="stat"><div class="num tabular">100% / 0%</div><div class="label">real FAOSTAT coverage split, rich vs. sparse tier</div></div>
+        <div class="stat"><div class="num tabular">21.1%</div><div class="label">of the full live price matrix is real data, system-wide</div></div>
+        <div class="stat"><div class="num tabular">2 / 3</div><div class="label">recommendation-quality metrics reversed the naive hypothesis</div></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="finding-num">2</span><h3>Stated confidence is badly miscalibrated — the exact Guo et al. failure mode, measured directly</h3></div>
+      <p>The forecasting pipeline reports a confidence value with every prediction. Measured against real, resolved outcomes: predictions fall inside their own stated confidence interval only <strong>38.5% of the time</strong>, against a claimed ~80% — roughly a 2× miscalibration, not a rounding-level discrepancy. Source inspection confirms why: confidence is a hand-set constant per model layer, never derived from the model's own historical accuracy. This was independently confirmed to hold at all three of the system's geography-resolution layers (local, sub-national, national) and across every country — the miscalibration is systemic, not tier-specific.</p>
+      <p>This is a direct, empirical instance of the overconfidence phenomenon the proposal cites Guo et al. [2017] as motivating RQ5 — found in a real system, not simulated, giving early confidence that the proposed calibration methodology addresses a genuine, measurable problem rather than a hypothetical one.</p>
+      <div class="bar-mini"><div class="bl">Stated confidence</div><div class="bt"><div class="bf" style="width:80%; background:var(--text-tertiary);"><span>~80%</span></div></div></div>
+      <div class="bar-mini"><div class="bl">Real, measured</div><div class="bt"><div class="bf" style="width:38.5%; background:var(--status-warning);"><span>38.5%</span></div></div></div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="finding-num">3</span><h3>A live provenance failure — found and corrected — demonstrates auditability in practice</h3></div>
+      <p>While auditing whether the system's evidence-source labeling is equitable across countries, a live incident was found: a caching defect was serving South Sudan, Somalia, and Uganda a fabricated price (traced to a misread copyright-year digit) while tagging it with the label of a real data source — the system was, for these three countries, presenting fabricated evidence as trustworthy. Root-caused, fixed, and verified end-to-end against the live system.</p>
+      <p>The underlying provenance <em>design</em> — a per-record, granular source label distinguishing real from synthetic data — was itself confirmed sound; the failure was in stale cached state, not the architecture. This distinction matters for the proposal: it demonstrates the kind of rigorous, evidence-grounded auditing (distinguishing a design flaw from an implementation defect) the proposed research intends to formalize and automate.</p>
+      <div class="finding-stats">
+        <div class="stat"><div class="num tabular">56</div><div class="label">stale records found serving fabricated data as real</div></div>
+        <div class="stat"><div class="num tabular">3</div><div class="label">countries directly affected, all in the data-sparse tier</div></div>
+      </div>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="finding-num">4</span><h3>A working abstention mechanism already exists, and its behavior is measurably data-responsive</h3></div>
+      <p>The recommendation engine includes a real evidence-sufficiency gate that withholds a recommendation when supporting signals fall below a threshold, rather than issuing a confident answer regardless. Measured live across two independent runs: the gate's firing rate varies genuinely by country — from 30.8% to 66.7% — evidence this is a functioning, data-responsive decision point, not a static placeholder.</p>
+      <p>This is a working, if simple, existing instance of exactly the decision RQ4 investigates ("retrieve more evidence, recommend, or abstain") — a concrete starting point the proposed research can extend toward the fuller evidence-acquisition and reasoning framework described in the proposal, rather than building the mechanism from nothing.</p>
+      <div class="finding-stats">
+        <div class="stat"><div class="num tabular">30.8%–66.7%</div><div class="label">abstention-gate firing rate, by country</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="num-label">Reading these findings honestly</div>
+    <h2>What this is, and isn't, evidence of</h2>
+    <p>These are preliminary, single-audit-pass findings against one production system, not a completed research contribution. Sample sizes for the calibration figures are small (n=96 evaluated forecasts, one generation batch) and are explicitly treated as a first measurement, not a stable estimate, in the underlying research log. The value for this proposal is narrower and more concrete: it shows the specific failure modes the proposed methodology targets — miscalibration, provenance gaps, unaudited disparities — are demonstrably present in a real agricultural intelligence system today, and that they are discoverable and correctable through the kind of systematic, evidence-grounded auditing this research proposes to formalize.</p>
+  </section>
+
+  <footer>
+    <p>Source: <code>thesis-lab/active_tests/regional-equity-audit/</code> and <code>thesis-lab/active_tests/forecast-confidence-calibration/</code>, AgroIntel platform research log. Full methodology, raw per-country figures, and reproduction scripts available on request.</p>
+    <p>Prepared as supporting preliminary evidence for the attached research proposal.</p>
+  </footer>
+
+</div>
