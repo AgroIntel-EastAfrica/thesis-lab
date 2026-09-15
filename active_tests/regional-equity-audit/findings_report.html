@@ -239,6 +239,15 @@
     font-family: var(--font-mono); font-size: 0.72rem; color: #fff; padding-left: 9px; white-space: nowrap;
   }
 
+  .stack-row { display: flex; align-items: center; gap: 14px; margin: 10px 0; }
+  .stack-label { width: 84px; flex: none; font-size: 0.85rem; color: var(--text-secondary); }
+  .stack-track { flex: 1; height: 22px; background: var(--surface-sunken); border-radius: 5px; display: flex; overflow: hidden; }
+  .stack-seg { height: 100%; display: flex; align-items: center; }
+  .stack-seg.real { background: var(--status-good); border-radius: 5px 0 0 5px; }
+  .stack-seg.synthetic { background: var(--text-tertiary); }
+  .stack-seg span { font-family: var(--font-mono); font-size: 0.68rem; color: #fff; padding-left: 8px; white-space: nowrap; }
+  .stack-pct { width: 46px; flex: none; font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-secondary); text-align: right; }
+
   .callout {
     border-left: 3px solid var(--status-warning);
     background: var(--status-warning-soft);
@@ -297,6 +306,8 @@
       actually measured, against what data, and what it does and doesn't show.
     </p>
     <div class="status-row">
+      <span class="pill"><span class="dot good"></span>All 11 framework dimensions — answered</span>
+      <span class="pill"><span class="dot good"></span>3 real production bugs — found &amp; fixed</span>
       <span class="pill"><span class="dot good"></span>RecommendationEngine comparison — complete</span>
       <span class="pill"><span class="dot warn"></span>Forecast MAPE comparison — confounded</span>
       <span class="pill"><span class="dot crit"></span>Calibration — badly miscalibrated</span>
@@ -307,11 +318,11 @@
   <section>
     <div class="eyebrow">At a glance</div>
     <div class="stat-strip">
-      <div class="stat-tile"><div class="num tabular">4</div><div class="label">real data sources checked</div></div>
+      <div class="stat-tile"><div class="num tabular">21.1%</div><div class="label">of the live price matrix is real data, system-wide</div></div>
+      <div class="stat-tile"><div class="num tabular">3</div><div class="label">real production bugs found &amp; fixed this audit</div></div>
       <div class="stat-tile"><div class="num tabular">2,880</div><div class="label">real forecast rows generated</div></div>
       <div class="stat-tile"><div class="num tabular">38.5%</div><div class="label">real interval coverage vs. ~80% stated</div></div>
       <div class="stat-tile"><div class="num tabular">0</div><div class="label">real FAOSTAT rows for UG/SS/SO/CD</div></div>
-      <div class="stat-tile"><div class="num tabular">2</div><div class="label">of 3 RecommendationEngine metrics reversed</div></div>
     </div>
   </section>
 
@@ -350,7 +361,7 @@
           <tr>
             <td>Selina Wamucii</td>
             <td>Wholesale/retail price scrape, all 8 countries</td>
-            <td><span class="src-badge src-blocked">unusable — site changed</span></td>
+            <td><span class="src-badge src-blocked">unusable — site changed; live incident found &amp; fixed</span></td>
             <td class="mono">services/market/selina_wamucii_prices.py</td>
           </tr>
           <tr>
@@ -371,7 +382,34 @@
   </section>
 
   <section>
-    <div class="eyebrow">02 · Metrics — what's measured, and why it's the right measure</div>
+    <div class="eyebrow">02 · Exploratory data analysis</div>
+    <h2>What the live system actually looks like, right now</h2>
+    <p class="prose">Before testing any hypothesis, the underlying data was profiled directly — full pagination, not a sampled page, queried live on 2026-09-15.</p>
+    <div class="chart-card">
+      <h3>Real vs. synthetic coverage, every country × every commodity</h3>
+      <div class="chart-sub">408 (country, commodity) pairs checked against the live price model · 2026-09-15</div>
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--status-good)"></span>Real (FAOSTAT)</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--text-tertiary)"></span>Synthetic (baseline)</span>
+      </div>
+      <div id="chart-coverage-matrix"></div>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 14px 0 0;">Only two source types appear anywhere in the live matrix — <code>faostat</code> and <code>baseline</code>. EATTA, EAX, IMF PCPS, Selina Wamucii, and WFP — the other five links in the price model's own priority chain — currently contribute zero rows system-wide. FAOSTAT is, right now, the only functioning real data source in the entire system: not a rough approximation, an exact 100%-vs-0% split by country tier.</p>
+    </div>
+    <div class="chart-card" style="margin-top:18px;">
+      <h3><code class="mono">forecast_evaluations</code> table shape</h3>
+      <div class="chart-sub">the source of every MAPE/calibration number in this report</div>
+      <div class="stat-strip" style="margin:0;">
+        <div class="stat-tile"><div class="num tabular">2,880</div><div class="label">total rows — one single batch</div></div>
+        <div class="stat-tile"><div class="num tabular">100%</div><div class="label">rows with predicted bounds set</div></div>
+        <div class="stat-tile"><div class="num tabular">6.7%</div><div class="label">evaluated so far (2 of 30 days arrived)</div></div>
+        <div class="stat-tile"><div class="num tabular">30</div><div class="label">consecutive target dates, 96 rows each</div></div>
+      </div>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 14px 0 0;">Every calibration/MAPE figure in this report is n=96, from a single 30-day-horizon batch generated 2026-09-13 — one measurement, not yet a longitudinal sample. The two evaluated slices (2026-09-13 and 2026-09-15 target dates) are the same batch observed 2 days apart, not independent experiments.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">03 · Metrics — what's measured, and why it's the right measure</div>
     <h2>Six metrics, six real questions</h2>
     <div class="table-wrap">
       <table>
@@ -413,7 +451,7 @@
   </section>
 
   <section>
-    <div class="eyebrow">03 · The root cause, confirmed live</div>
+    <div class="eyebrow">04 · The root cause, confirmed live</div>
     <h2>Real FAOSTAT coverage by country</h2>
     <p class="prose">Live, authenticated call to <code>faostatservices.fao.org</code>, 2026-09-13 — not a cached or historical check. Kenya, Tanzania, Rwanda and Burundi have real annual producer-price series; Uganda, South Sudan, Somalia and DRC return exactly zero, with valid credentials.</p>
     <div class="chart-card">
@@ -428,7 +466,54 @@
   </section>
 
   <section>
-    <div class="eyebrow">04 · Does the gap show up where users see it?</div>
+    <div class="eyebrow">05 · Real bugs, found and fixed during this audit</div>
+    <h2>Auditing for equity found three live production defects</h2>
+    <p class="prose">Asking these questions directly, rather than trusting the code's own description of itself, surfaced three real bugs — each found because a specific dimension of the framework demanded checking something Phase 1 alone never would have exercised. All three are fixed, verified, and merged to <code>master</code>.</p>
+
+    <div class="chart-card">
+      <h3>1 · Fabricated prices badged as real data</h3>
+      <div class="chart-sub">provenance/transparency check → live production incident</div>
+      <p style="margin-bottom:10px;">A stale cache bug left over from an earlier fix was still serving South Sudan, Somalia, and Uganda a price scraped from a misread copyright-year digit (<code>2026.0</code>) — tagged <code>price_source: "selina_wamucii"</code> and badged identically to real FAOSTAT data.</p>
+      <div class="cmp-row">
+        <div class="cmp-label">South Sudan maize, before</div>
+        <div class="cmp-track"><div class="cmp-fill" style="width:97%; background:var(--status-critical);"><span class="cmp-fill-label">$2,090/MT — fabricated, badged "real"</span></div></div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-label">South Sudan maize, after</div>
+        <div class="cmp-track"><div class="cmp-fill" style="width:20%; background:var(--status-good);"><span class="cmp-fill-label">$433/MT — honest "Modeled" baseline</span></div></div>
+      </div>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 10px 0 0;">56 stale keys purged across 8 commodities × up to 7 countries. Live-verified end-to-end after the fix.</p>
+    </div>
+
+    <div class="chart-card" style="margin-top:18px;">
+      <h3>2 · Forecaster trained on a never-validated synthetic price</h3>
+      <div class="chart-sub">commodity-level audit → root-cause mechanism fix</div>
+      <p style="margin-bottom:10px;">The forecaster's training data always anchored to <code>BASE_PRICES_USD</code> — a hand-guessed baseline — even where real FAOSTAT data existed. Coffee/tea's guessed values were off by 2–13× from reality for Kenya, Rwanda, and Burundi.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Country · commodity</th><th class="num">Old synthetic anchor</th><th class="num">Real FAOSTAT price</th><th class="num">Forecast after fix</th></tr></thead>
+          <tbody>
+            <tr><td>Burundi coffee</td><td class="num tabular">$2,600</td><td class="num tabular">$270.90</td><td class="num tabular">$273.85</td></tr>
+            <tr><td>Rwanda coffee</td><td class="num tabular">$2,800</td><td class="num tabular">$277.40</td><td class="num tabular">$265.84</td></tr>
+            <tr><td>Kenya coffee</td><td class="num tabular">$2,500</td><td class="num tabular">$4,886.50</td><td class="num tabular">$4,654.84</td></tr>
+            <tr><td>Burundi tea</td><td class="num tabular">$1,750</td><td class="num tabular">$135.50</td><td class="num tabular">$125.51</td></tr>
+            <tr><td>Rwanda tea</td><td class="num tabular">$1,800</td><td class="num tabular">$179.40</td><td class="num tabular">$182.80</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 10px 0 0;">Fixed the mechanism, not just the numbers: the forecaster now checks for real data first and anchors there whenever it exists — <code>services/market/price_model.py</code>'s new <code>get_real_anchor_price()</code>. Every other existing caller of the training-history function is unaffected.</p>
+    </div>
+
+    <div class="chart-card" style="margin-top:18px;">
+      <h3>3 · Two of three geography layers were unreachable</h3>
+      <div class="chart-sub">market/geography-level audit → routing bug</div>
+      <p style="margin-bottom:10px;">Requesting the LOCAL or SUB_NATIONAL forecaster layer directly — the natural, first-class values, used exactly this way elsewhere in the codebase — silently returned the NATIONAL ensemble instead. An existing test had actually asserted this exact bug as intended behavior.</p>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 0;">No live production impact — the only production caller hardcodes NATIONAL directly — but it blocked this audit's geography-level comparison entirely until fixed. See §09.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">06 · Does the gap show up where users see it?</div>
     <h2>RecommendationEngine: real, live comparison</h2>
     <p class="prose">Two independent live calls, hours apart, 2026-09-13 (numbers shown from the second). Hypothesis: data-sparse countries should score worse on all three. Confidence moved in that direction, weakly — the other two reversed, consistently across both runs.</p>
     <div class="chart-row">
@@ -460,7 +545,7 @@
   </section>
 
   <section>
-    <div class="eyebrow">05 · Does the gap show up in forecast accuracy?</div>
+    <div class="eyebrow">07 · Does the gap show up in forecast accuracy?</div>
     <h2>Forecast MAPE &amp; interval coverage, by tier</h2>
     <p class="prose">From the same 2,880 real forecast rows, evaluated against real resolved prices, 2026-09-13. MAPE is <em>reversed</em> from the hypothesis — but this comparison is confounded (see callout) and should not be read as "the system serves data-sparse countries better."</p>
     <div class="chart-row">
@@ -482,7 +567,7 @@
   </section>
 
   <section>
-    <div class="eyebrow">06 · The sharper finding</div>
+    <div class="eyebrow">08 · The sharper finding</div>
     <h2>Stated confidence vs. real, measured accuracy</h2>
     <p class="prose">System-wide, n=96, 2026-09-13 — the first real calibration measurement this system has ever produced. The forecaster's confidence values are hand-set constants per model layer (Prophet: <code class="mono">0.80</code> trained / <code class="mono">0.70</code> fallback; XGBoost: <code class="mono">0.85 − 0.01×day</code> trained / <code class="mono">0.65</code> fallback, blended 60/40 in the national ensemble). Which tier applies is gated only by <code class="mono">MIN_TRAINING_POINTS = 14</code> — a check on history <em>length</em>, blind to whether that history is real market data or a same-length synthetic walk.</p>
     <div class="chart-card">
@@ -501,7 +586,54 @@
   </section>
 
   <section>
-    <div class="eyebrow">07 · Honest summary</div>
+    <div class="eyebrow">09 · Does the equity picture change by geography level?</div>
+    <h2>LOCAL, SUB_NATIONAL, NATIONAL — three layers, same answer</h2>
+    <p class="prose">Once the routing bug above was fixed, the three real forecaster layers (XGBoost/LOCAL, Prophet/SUB_NATIONAL, ensemble/NATIONAL) were compared directly for maize, all 8 countries, 2026-09-15.</p>
+    <div class="chart-card">
+      <h3>Mean confidence by layer</h3>
+      <div class="chart-sub">every country returns the exact same value at each layer — this is every country's bar, overlapping</div>
+      <div class="cmp-row">
+        <div class="cmp-label">LOCAL (XGBoost)</div>
+        <div class="cmp-track"><div class="cmp-fill tabular" style="width:83%; background:var(--rich);"><span class="cmp-fill-label">0.83 — all 8 countries</span></div></div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-label">SUB_NATIONAL (Prophet)</div>
+        <div class="cmp-track"><div class="cmp-fill tabular" style="width:80%; background:var(--sparse);"><span class="cmp-fill-label">0.80 — all 8 countries</span></div></div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-label">NATIONAL (ensemble)</div>
+        <div class="cmp-track"><div class="cmp-fill tabular" style="width:81.2%; background:var(--text-tertiary);"><span class="cmp-fill-label">0.812 — all 8 countries</span></div></div>
+      </div>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 14px 0 0;">Confidence is a flat, hand-set constant per layer — identical across every country regardless of data tier, at every geography level. This closes the "market" axis with a real answer: there's no equity disparity by geography level, but only because the confidence mechanism is uniformly disconnected from both country and level — the same root cause the calibration finding (§08) already identified, now confirmed to hold at LOCAL and SUB_NATIONAL too, not just NATIONAL.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">10 · The complete answer</div>
+    <h2>All 11 framework dimensions</h2>
+    <p class="prose">The original brief asked whether AI reliability changes according to geography, commodity, market, data availability, and source coverage — investigated via uncertainty, calibration, provenance, transparency, abstention, and subgroup performance. All 11 now have a real, evidenced answer.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Dimension</th><th>Answer</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td><strong>Geography</strong></td><td>Real data gap exists, but doesn't cleanly translate to a service-quality gap in either user-facing layer tested.</td></tr>
+          <tr><td class="num">2</td><td><strong>Commodity</strong></td><td>Varies sharply — sweet potatoes worst-calibrated (12.5% coverage), soybeans best (50%), both far below stated ~80%.</td></tr>
+          <tr><td class="num">3</td><td><strong>Market</strong> (geography level)</td><td>No disparity by level — confidence is a flat constant at LOCAL, SUB_NATIONAL, and NATIONAL alike (§09).</td></tr>
+          <tr><td class="num">4</td><td><strong>Data availability</strong></td><td>Quantified precisely: 21.1% real coverage system-wide, exact 100%-vs-0% split by country tier (§02).</td></tr>
+          <tr><td class="num">5</td><td><strong>Source coverage</strong></td><td>FAOSTAT is the only functioning real source; UN Comtrade independently confirms the same zero for SS/SO on a different data type.</td></tr>
+          <tr><td class="num">6</td><td><strong>Uncertainty</strong></td><td>Reported, but hand-set per layer, never derived from historical accuracy — confirmed at all 3 geography levels.</td></tr>
+          <tr><td class="num">7</td><td><strong>Calibration</strong></td><td>Measured directly: 38.5% real interval coverage vs. ~80% stated — first real calibration number this system has produced (§08).</td></tr>
+          <tr><td class="num">8</td><td><strong>Provenance</strong></td><td>Design is honest by inspection, but was <em>actively wrong</em> in production until this audit found and fixed the Selina cache bug (§05).</td></tr>
+          <tr><td class="num">9</td><td><strong>Transparency</strong></td><td>Per-item dashboard badges are honest and equitable across tiers; one gap — the top-level source label doesn't vary per response.</td></tr>
+          <tr><td class="num">10</td><td><strong>Abstention</strong></td><td>Real, working mechanism (<code>evidence_sufficient</code>) — genuinely varies by country (0.308–0.667), not hardcoded.</td></tr>
+          <tr><td class="num">11</td><td><strong>Subgroup performance</strong></td><td>Country-tier, commodity, and geography-level breakdowns all show the same pattern: real subgroup differences exist in the data, but stated confidence never tracks them.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">11 · Honest summary</div>
     <h2>What's confirmed, what isn't, what's still open</h2>
     <div class="table-wrap">
       <table>
@@ -511,15 +643,17 @@
           <tr><td>The data gap is structural, not one provider's coverage choice</td><td>Confirmed — UN Comtrade independently agrees with FAOSTAT for South Sudan and Somalia (zero rows, every commodity, 2022–2023)</td><td><span class="src-badge src-real">high — 2 independent systems</span></td></tr>
           <tr><td>RecommendationEngine serves data-sparse countries worse</td><td>Not confirmed (reversed, 2 of 3 metrics)</td><td><span class="src-badge src-real">high — 2 independent runs</span></td></tr>
           <tr><td>Data-sparse countries get worse forecasts (MAPE)</td><td>Confounded — cannot be tested fairly with current data</td><td><span class="src-badge src-pending">low — synthetic ground truth</span></td></tr>
-          <tr><td>The forecaster's confidence signal ignores real-vs-synthetic input</td><td>Confirmed by code inspection</td><td><span class="src-badge src-real">high — direct source read</span></td></tr>
-          <tr><td>The whole system is poorly calibrated (regardless of tier)</td><td>Confirmed</td><td><span class="src-badge src-pending">medium — n=96, one day</span></td></tr>
+          <tr><td>The forecaster's confidence signal ignores real-vs-synthetic input</td><td>Confirmed by code inspection — and fixed for the training-anchor case (§05)</td><td><span class="src-badge src-real">high — direct source read + live verification</span></td></tr>
+          <tr><td>The whole system is poorly calibrated (regardless of tier)</td><td>Confirmed, now at 2 of 3 geography levels too</td><td><span class="src-badge src-pending">medium — n=96, one day</span></td></tr>
+          <tr><td>Provenance/transparency disclosure is equitable by design</td><td>Confirmed for the design; was violated in production by a real bug, now fixed</td><td><span class="src-badge src-real">high — live incident found &amp; fixed</span></td></tr>
+          <tr><td>Geography level (market) introduces its own equity gap</td><td>Not confirmed — flat confidence at every level, for every country</td><td><span class="src-badge src-real">high — live, post-fix comparison</span></td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <footer>
-    <p>Generated 2026-09-13/14 from live, unmocked calls against production Supabase and FAOSTAT — see <code>thesis-lab/active_tests/regional-equity-audit/experiment_blueprint.md</code> and <code>thesis-lab/active_tests/forecast-confidence-calibration/experiment_blueprint.md</code> for the full run log, including the FAOSTAT/Selina Wamucii/WFP/Comtrade investigation this report draws its data-sources table from.</p>
+    <p>Generated 2026-09-13 through 2026-09-15 from live, unmocked calls against production Supabase, Redis, FAOSTAT, and UN Comtrade — see <code>thesis-lab/active_tests/regional-equity-audit/experiment_blueprint.md</code> and <code>thesis-lab/active_tests/forecast-confidence-calibration/experiment_blueprint.md</code> for the full run log, including the three real bugs found and fixed during this audit (all merged to <code>master</code>).</p>
     <p>Paper 14 of the AgroIntel PhD thesis publication roadmap · <code>thesis-lab/PUBLICATION_ROADMAP.md</code></p>
   </footer>
 
@@ -574,6 +708,35 @@
     });
     bar.addEventListener('mouseleave', () => faostatTip.hide());
     faostatEl.appendChild(group);
+  });
+
+  // ---- Real-vs-synthetic coverage matrix (stacked bars, 8 countries) ----
+  const coverage = [
+    {cc:'KE', tier:'rich', real:27, synthetic:24},
+    {cc:'TZ', tier:'rich', real:20, synthetic:31},
+    {cc:'RW', tier:'rich', real:21, synthetic:30},
+    {cc:'BI', tier:'rich', real:18, synthetic:33},
+    {cc:'UG', tier:'sparse', real:0, synthetic:51},
+    {cc:'SS', tier:'sparse', real:0, synthetic:51},
+    {cc:'SO', tier:'sparse', real:0, synthetic:51},
+    {cc:'CD', tier:'sparse', real:0, synthetic:51},
+  ];
+  const covEl = document.getElementById('chart-coverage-matrix');
+  coverage.forEach(d => {
+    const total = d.real + d.synthetic;
+    const realPct = (d.real / total) * 100;
+    const synthPct = 100 - realPct;
+    const row = document.createElement('div');
+    row.className = 'stack-row';
+    row.innerHTML = `
+      <div class="stack-label">${d.cc} <span style="color:var(--text-tertiary); font-size:0.72rem;">(${d.tier})</span></div>
+      <div class="stack-track">
+        ${d.real > 0 ? `<div class="stack-seg real" style="width:${realPct}%;" title="${d.cc}: ${d.real}/${total} real"><span>${d.real}</span></div>` : ''}
+        <div class="stack-seg synthetic" style="width:${synthPct}%;" title="${d.cc}: ${d.synthetic}/${total} synthetic"><span>${d.synthetic}</span></div>
+      </div>
+      <div class="stack-pct tabular">${realPct.toFixed(0)}%</div>
+    `;
+    covEl.appendChild(row);
   });
 
   // ---- Two-bar comparison charts ----

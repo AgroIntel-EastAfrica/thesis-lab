@@ -131,3 +131,18 @@ of this system's real miscalibration is a bad training anchor, not
 just an uncalibrated confidence number — worth separating the two
 causes before concluding a fix (e.g. data-derived confidence) would
 close the whole gap on its own.
+
+**Decision, 2026-09-15: defer the calibration fix itself.** Asked
+directly whether to build the real fix now (recalibrating the stated
+confidence/interval width against real historical accuracy in
+`forecast_evaluations`, e.g. conformal prediction). Decided to wait:
+n=192 evaluated rows (two single-day slices of one batch) is too thin
+to calibrate against without real risk of fitting sampling noise rather
+than the true miscalibration. Full reasoning and the operational
+caveat (evaluation does not happen automatically — no production
+worker is actually running continuously; see
+`product/PRODUCTION_AUDIT.md`) is recorded in the
+regional-equity-audit blueprint's "Decision, 2026-09-15" section, since
+that experiment owns the operational side of this. Reopen once
+meaningfully more real evaluated history exists, ideally spanning
+multiple generation batches, not just further days of the current one.

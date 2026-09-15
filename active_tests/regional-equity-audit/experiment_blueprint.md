@@ -849,3 +849,44 @@ not just a single yes/no answer.
 - Cassava, rice, sorghum, beans, and coffee's commodity-level numbers
   (Phase 2b) need a post-fix re-run to replace their flagged-uncertain
   figures with trustworthy ones.
+
+## Decision, 2026-09-15: defer the calibration fix, let real data accumulate first
+
+Asked directly whether the calibration finding (38.5% real coverage vs.
+~80% stated) should be fixed now — e.g. via conformal-prediction-style
+recalibration of the confidence interval, driven off real historical
+accuracy in `forecast_evaluations` instead of the hand-set constants in
+`services/forecasting/price.py`. Recommended against doing it
+immediately: only 192 rows are evaluated so far (two single-day slices
+of one batch), and fitting a calibration adjustment on that little data
+risks overfitting to sampling noise — could plausibly make things worse
+in a less-obvious way than the current honest-but-wrong constants.
+**Decision: wait for more real evaluated history before building the
+calibration mechanism.**
+
+**Important operational caveat, found while documenting this**: "wait"
+does **not** happen passively. There is no live, continuously-running
+production worker — confirmed via `product/PRODUCTION_AUDIT.md`:
+`deploy-production.yml` has 0 runs ever (verified via the GitHub API),
+and neither `deploy-production.yml` nor `deploy-staging.yml` actually
+deploys anything live — both only build Docker images and push to
+GHCR, no SSH/hosting-API/`docker compose up` step anywhere. Every one
+of the 192 currently-evaluated rows exists because this session
+manually stood up a local worker against real production Supabase and
+called `update_price_forecasts`/`evaluate_forecast_accuracy` directly.
+The other 2,688 pending rows will **not** evaluate themselves as their
+target dates arrive unless either (a) a future session manually
+triggers `evaluate_forecast_accuracy` again on subsequent days, or
+(b) the standing "confirm cloud deployment status" gap
+(`product/PRODUCTION_AUDIT.md`) gets resolved so a real scheduled
+worker runs continuously. Recorded here so "wait for more data" isn't
+mistaken for something that happens on its own — it's a real action
+item, not a timer.
+
+**Reopen criterion**: once a meaningfully larger number of
+`forecast_evaluations` rows are evaluated (ideally spanning multiple
+distinct generation batches, not just further days of the same
+2026-09-13 batch), revisit building the real, data-derived calibration
+mechanism — a minimum-sample-size-gated function that falls back to
+today's hand-set constants until enough real evaluated history exists,
+then switches over automatically.
