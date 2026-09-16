@@ -3,11 +3,14 @@
 - **Owner:**
 - **Started:**
 - **Status:** active
-- **Paper:** Paper 13 — "Trustworthy Agricultural Intelligence Under
+- **Paper:** Paper 14 — "Trustworthy Agricultural Intelligence Under
   Unequal Data Availability" (promoted 2026-09-12 from a sub-topic of
-  Paper 10/Human-AI Decision Support into its own dedicated paper — same
+  Paper 13/Human-AI Decision Support into its own dedicated paper — same
   experiment, no new work, just its own paper bucket per the 15-paper
-  publication roadmap revision).
+  publication roadmap revision. See `thesis-lab/PUBLICATION_ROADMAP.md`
+  row 14 for the authoritative numbering — this line previously
+  misnumbered itself "Paper 13" and misattributed the source as "Paper
+  10," both corrected 2026-09-17).
 - **Source:** Concept paper "Agentic Agricultural Intelligence..." (Masaba,
   Makerere University) — Section 6 ("Responsible and Trustworthy AI"):
   "A system that performs well for data-rich regions but poorly for
@@ -292,12 +295,12 @@ AgroIntel's real equity gap (confirmed to exist structurally: FAOSTAT
 coverage genuinely differs by country) does **not** cleanly show up as a
 service-quality gap in either of the two user-facing layers tested, once
 methodology confounds are accounted for. That's a legitimate, if
-unglamorous, result — but it is a *partial* answer to Paper 13's real
+unglamorous, result — but it is a *partial* answer to Paper 14's real
 scope, not the full one. See below.
 
 ## Scope completeness check, 2026-09-14
 
-Paper 13's original framing (per the adopted 15-paper reorganization
+Paper 14's original framing (per the adopted 15-paper reorganization
 proposal, "E. Trustworthy AI") asks whether AI reliability changes
 according to **geography, commodity, market, data availability, source
 coverage**, investigated via **uncertainty, calibration, provenance,
@@ -566,7 +569,7 @@ synthetic training anchor for that commodity/country was never
 validated and turns out to be off by up to an order of magnitude.
 
 **Why this matters more than the original equity hypothesis**: this is
-the *inverse* of what Paper 13 set out to test. The concern was
+the *inverse* of what Paper 14 set out to test. The concern was
 data-sparse countries getting worse service from missing real data.
 What's actually been found, now three times over (RecommendationEngine
 comparison in Phase 1, and now this), is that in places real data
