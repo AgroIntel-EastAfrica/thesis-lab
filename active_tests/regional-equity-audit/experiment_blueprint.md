@@ -292,12 +292,12 @@ AgroIntel's real equity gap (confirmed to exist structurally: FAOSTAT
 coverage genuinely differs by country) does **not** cleanly show up as a
 service-quality gap in either of the two user-facing layers tested, once
 methodology confounds are accounted for. That's a legitimate, if
-unglamorous, result — but it is a *partial* answer to Paper 14's real
+unglamorous, result — but it is a *partial* answer to Paper 13's real
 scope, not the full one. See below.
 
 ## Scope completeness check, 2026-09-14
 
-Paper 14's original framing (per the adopted 15-paper reorganization
+Paper 13's original framing (per the adopted 15-paper reorganization
 proposal, "E. Trustworthy AI") asks whether AI reliability changes
 according to **geography, commodity, market, data availability, source
 coverage**, investigated via **uncertainty, calibration, provenance,
@@ -566,7 +566,7 @@ synthetic training anchor for that commodity/country was never
 validated and turns out to be off by up to an order of magnitude.
 
 **Why this matters more than the original equity hypothesis**: this is
-the *inverse* of what Paper 14 set out to test. The concern was
+the *inverse* of what Paper 13 set out to test. The concern was
 data-sparse countries getting worse service from missing real data.
 What's actually been found, now three times over (RecommendationEngine
 comparison in Phase 1, and now this), is that in places real data
@@ -890,3 +890,123 @@ distinct generation batches, not just further days of the same
 mechanism — a minimum-sample-size-gated function that falls back to
 today's hand-set constants until enough real evaluated history exists,
 then switches over automatically.
+
+## 2026-09-17 check-in: "wait" confirmed passive, and a new real data-quality finding
+
+Re-ran `run_audit.py` (read-only, no writes) two days after the 2026-09-15
+EDA, specifically to test the "wait does **not** happen passively"
+warning above. Confirmed exactly as predicted: `n_evaluated` is still 24
+per country (192 total) — identical to 2026-09-15. Zero rows evaluated
+in the intervening 2 days. Nobody manually triggered
+`evaluate_forecast_accuracy`, and no live scheduled worker exists to do
+it automatically. This is not a new finding so much as the standing one
+being empirically confirmed rather than just asserted — the "reopen
+criterion" above remains genuinely blocked on the same operational gap.
+
+**A new, real, substantive finding surfaced while re-checking the
+numbers.** `run_audit.py`'s per-country MAPE (blending both evaluated
+target dates, 24 rows/country) diverges sharply from the single-date
+Run 2 table above for exactly two countries: RW MAPE jumped to 94.83%
+and BI to 105.39% (vs. 12.25%/8.89% in the 2026-09-13-only table) — both
+now *worse* than every data-sparse country, which would reverse this
+experiment's central finding if taken at face value.
+
+Traced to source rather than accepted at face value. Per-commodity
+breakdown (`forecast_evaluations`, both target dates) shows this isn't a
+broad regression: 10 of 12 commodities for RW/BI show normal-range
+degradation (20-60% MAPE — itself elevated, consistent with the
+system-wide miscalibration already documented, but not extreme).
+**Coffee and tea specifically, for both RW and BI, on the 2026-09-15
+target date only**, show `actual_price` collapsing to roughly 1/10th of
+their 2026-09-13 value: BI coffee 2595.88 -> 275.01 (881% MAPE), BI tea
+1707.78 -> 136.66 (1186% MAPE), RW coffee 2696.49 -> 278.77 (987% MAPE),
+RW tea 1829.22 -> 180.15 (896% MAPE). Two unrelated commodities, two
+countries, same ~10x magnitude, same single date — not a plausible real
+market movement.
+
+Root-caused as far as possible without live credentials:
+- Live `get_daily_price()` right now still returns coffee at ~$270-287
+  for both RW/BI (`price_source: faostat`) — confirming the *low* value,
+  not the 2026-09-13 one, is what the real pipeline currently produces.
+  Tea has since fallen back to `price_source: baseline` (~$1750-1800),
+  suggesting whatever produced the low tea value was more transient than
+  coffee's.
+- The underlying Redis-cached FAOSTAT entries (`get_faostat_price`) are
+  static single-year anchors — RW: year 2015 (\$277.4 coffee, \$179.4
+  tea), BI: year 2019 (\$270.9 coffee, \$135.5 tea) — not something that
+  should swing 10x day-to-day under the documented "deterministic
+  mean-reverting walk." This means the 2026-09-13 evaluation's *actual*
+  price almost certainly came from a different source (`baseline`, the
+  synthetic anchor) than the 2026-09-15 evaluation (`faostat`) — i.e.
+  the FAOSTAT-sourced value for these 4 pairs only started being served
+  sometime between the two evaluation dates.
+- Checked FAOSTAT's own item-code definition (web search, since live
+  auth wasn't available — see below): item 656 is "Coffee, green," the
+  standard internationally-traded form, not raw unprocessed cherry —
+  ruling out a product-basis mismatch (e.g. cherry-weight vs.
+  green-bean-weight) as the explanation. A ~\$270-280/tonne farm-gate
+  price for green coffee is implausible against real-world benchmarks
+  (typically \$1,500-6,000+/tonne even at the farm gate) regardless of
+  basis.
+- Read `services/market/faostat_prices.py`'s parsing code directly
+  (`sync_faostat_prices`, lines ~194-244): it applies **zero**
+  transformation to the raw FAOSTAT `Value` field — cached as-is, gated
+  only by a wide `1 < price_usd < 200,000` plausibility bound that
+  $270-280 easily passes. So this codebase's own arithmetic cannot be
+  introducing a 10x error. Two possibilities remain, and this audit
+  cannot distinguish between them without live data access:
+  1. FAOSTAT's own raw PP data for these specific
+     country/item/year rows is genuinely anomalous (a real reporting
+     error at the source, which does happen for smaller/less-monitored
+     national statistics submissions).
+  2. A real, previously-unnoticed gap in this same parsing code: the
+     "most recent year per item" selection loop (lines 200-209) reads
+     each row's `Item Code` and `Year` but never checks `Element Code`
+     against `_PP_ELEMENT` (5532) — it trusts the API's `element=5532`
+     query parameter to filter perfectly server-side and never verifies
+     independently. If FAOSTAT's API ever returns a row for a different,
+     numerically smaller element (e.g. an index rather than a raw
+     price) despite the filter, this code would cache it as if it were
+     the real USD/tonne price with no way to detect the mismatch.
+- **Genuinely blocked**: `FAOSTAT_USERNAME`/`FAOSTAT_PASSWORD` are not
+  present anywhere in the current `.env` (confirmed via `grep`), and
+  attempting the real `_login()` flow directly failed with `415
+  Unsupported Media Type` even before credentials would have mattered —
+  worth a second look independent of the credentials gap, since the
+  same request shape apparently succeeded whenever these cached entries
+  were originally synced. Without a working login, the raw per-row JSON
+  (which would show the true `Element Code`, `Unit`, and `Value` FAOSTAT
+  actually returned) cannot be re-fetched to settle which of the two
+  possibilities above is correct.
+
+**Why this matters for the paper, beyond fixing one number**: this is a
+live, concrete instance of the exact risk Section 6 of the concept paper
+warns about — an unverified provenance/data-quality defect silently
+contaminating a "real" (`faostat`-sourced) measurement in a way that,
+if left unexamined, would have *reversed* this experiment's own headline
+finding (data-rich countries showing worse service quality than
+data-sparse ones, for 2 of 8 countries, driven by 2 of 12 commodities on
+1 of 2 evaluated dates). It is also the second real provenance incident
+this experiment has found and traced to completion (after the Selina
+Wamucii copyright-year bug) — reinforcing that "real data source" is not
+a synonym for "correct data" and that an audit which only reads the
+`price_source` label without checking the number against a plausibility
+prior would have missed both.
+
+**Not fixed, deliberately** — matches the thesis-lab read-only
+boundary for this experiment (this session's investigation used only
+read calls: cache reads, live `get_daily_price()` calls, and one failed,
+credential-less external auth attempt; no writes were made to
+production Supabase or Redis). Two concrete next steps, both blocked on
+external input:
+1. Obtain valid `FAOSTAT_USERNAME`/`FAOSTAT_PASSWORD` (or a direct
+   `FAOSTAT_TOKEN`) to re-fetch the raw PP rows for RW coffee/tea (item
+   656/667, year 2015) and BI coffee/tea (year 2019) and inspect the
+   actual `Element Code` FAOSTAT returned per row — this alone would
+   settle whether this is a source-data anomaly or a parsing gap.
+2. If it turns out to be the parsing gap (possibility 2 above): add an
+   explicit `Element Code == _PP_ELEMENT` check inside the `by_item`
+   selection loop in `services/market/faostat_prices.py`, rejecting any
+   row whose element doesn't match rather than trusting the query
+   filter alone — a small, well-scoped real fix, not attempted here
+   since it's unverified which of the two causes is real.
