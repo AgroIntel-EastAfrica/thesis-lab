@@ -765,17 +765,111 @@ coffee, 73 partner rows) was inspected directly before the quota hit;
 the 12-row `UNKNOWN` batch was verified to be the correct, honest
 degradation path, not a crash or a silently-wrong zero.
 
+### Phase 0, fourth slice — 2026-09-17/18: production modality, unblocked
+by fixing two real production bugs found along the way
+
+**Built**: `scripts/collect_production.py`, against
+`services/forecasting/yield_prediction.py`'s
+`_fetch_faostat_yield_history()` (real FAOSTAT QCL domain). Unlike
+price/weather/trade, this function returns a full year→MT/ha history
+rather than one point-in-time reading, so each observation here takes
+the single most recent real year in that history — the same "most
+recent real reading" convention `collect_weather.py` already
+established for a different underlying reason (NASA POWER's
+fill-value walk-back).
+
+**A necessary detour before this modality was usable at all**:
+attempting to build this collector immediately surfaced that
+`_fetch_faostat_yield_history()` had never worked for real, in two
+compounding ways. (1) It never sent an `Authorization` header on its
+FAOSTAT QCL request — every real call has 401'd since the module
+shipped, silently degrading every `YieldPredictionService` caller to
+the hardcoded knowledge-base fallback table the whole time. (2) With
+auth fixed, it still returned zero rows: the code queried element
+`"5421"`, which matches none of QCL's real element codes (5312 Area
+harvested, 5412 Yield, 5510 Production) — a digit transposition of
+5412. Fixing the code alone still wasn't enough: a live test proved
+QCL's server-side `element` query filter itself doesn't reliably work
+(a request with `element=5412` explicit still returned 0 rows despite
+64 real years of exactly that element existing for the same area/item
+with no filter applied) — the actual fix fetches all elements per
+(area, item) and filters client-side by `Element Code`, the same
+defensive pattern already added to `faostat_prices.py`'s PP fetcher
+earlier this session, now proven empirically necessary here too. A
+third, latent bug surfaced once real training data started flowing for
+the first time: `_xgboost_yield_predict` fed `rainfall_deviation` into
+XGBoost as a training feature, but every training row's value for it
+was a hardcoded `0.0` (no real per-year rainfall history exists), so a
+tree model could never learn to use it — any rainfall value passed at
+inference was silently ignored. Caught live via a real, previously-
+passing test (`test_optimal_rainfall_boosts_yield`) failing once the
+real code path became reachable for the first time; fixed by applying
+rainfall as a post-hoc climate multiplier, matching the sibling
+`_linear_trend_predict`/baseline branches' existing convention. All
+three fixes are real production code changes (not thesis-lab), went
+through the full commit → push → PR cycle to `master` (not merged —
+pending the project owner's go-ahead, per this session's standing
+policy), and are logged in `product/PRODUCTION_AUDIT.md`'s Change Log.
+
+**What actually happened live**, run against the real, now-fixed
+FAOSTAT API for the full 4×3 scope:
+
+| Country | Coffee | Maize | Tea |
+|---|---|---|---|
+| KE | 64 yrs, 0.0436 MT/ha | 64 yrs, 0.1666 MT/ha | 64 yrs, 1.1765 MT/ha |
+| RW | 64 yrs, 0.1156 MT/ha | 64 yrs, 0.1834 MT/ha | 64 yrs, 0.4582 MT/ha |
+| SS | no data | 13 yrs, 0.0965 MT/ha | no data |
+| SO | no data | 64 yrs, 0.0690 MT/ha | no data |
+
+8 of 12 observations `observed_verified`, 4 `unknown` (SS/SO coffee and
+tea).
+
+**A third, genuinely distinct evidence-availability pattern** — the
+central emerging finding of Phase 0 so far. Price split cleanly by
+*country tier* (KE/RW real, SS/SO synthetic). Weather was *uniform
+across all 4 countries* regardless of tier (satellite coverage doesn't
+care about a country's national statistics capacity). Production is
+uniform across countries but varies by *commodity*: maize, a staple
+food-security crop, is tracked by FAOSTAT even for SS and SO; coffee
+and tea, export cash crops, are only tracked for countries that
+actually produce them at scale (KE, RW). Three modalities, three
+different real shapes of "sparse" — directly supporting the
+experiment's core premise that evidence availability is a property of
+the (modality, commodity, country) triple, not any single one of those
+dimensions alone.
+
+**Verified**: `ruff check` clean on `collect_production.py`. The
+production-code fixes it depends on were independently verified per
+this session's full bar: `ruff`/mypy clean (mypy findings confirmed
+identical before/after via `git stash`), the directly relevant pytest
+suites pass, and the live 4×3 result above matches exactly what was
+independently confirmed during the bug-fix investigation itself before
+this collector script existed.
+
+**Reopen item retried, still blocked**: re-ran `collect_trade.py` at
+2026-09-18 00:59 UTC expecting the quota to have replenished — it
+hadn't. Same `403 "Out of call volume quota"`, now reporting
+`"replenished in 02:00:02"` (~2026-09-18 03:00 UTC), consistent with
+the original ~7.5h window from the first hit rather than a shorter one
+— the second attempt's own 12 calls did not additionally extend the
+wait (UN Comtrade's quota appears to be a fixed replenishment
+timestamp, not a rolling one restarted by each failed call). All 12
+observations again correctly recorded as `DataState.UNKNOWN`, not a
+false zero. Output: `data/gold_standard_trade_20260917_220008.json`
+(superseding, not deleting, the first blocked run's file — both are
+honest records of the same real constraint).
+
 **What Phase 0 still needs, honestly not yet done**: the trade
-modality's real per-commodity data (blocked on the quota reset above,
-not yet re-attempted); production and textual-event collection scripts
-(2 of the planned 4–5 modalities remain unbuilt); the
+modality's real per-commodity data (still blocked on the UN Comtrade
+quota, next earliest retry ~2026-09-18 03:00 UTC); the textual/news-event modality
+(1 of the planned 4–5 modalities remains unbuilt); the
 `EvidenceQualityVector`'s 7 dimensions are *now technically computable*
-(three modalities exist to compare against each other, once trade's
-real data lands) but still entirely unpopulated (`None`) — deliberately
-deferred rather than attempted this pass, to keep each increment
-reviewable rather than compounding scope; no historical time-series
-collection yet
-(single-snapshot data for both modalities so far — Experiment A/B's
-tiered/sparsity comparisons need a real multi-date sample, not one day);
-the numeric success criteria for H1–H5 (flagged in Success Metrics as
-needing to be pinned down once real data exists) are still undecided.
+(four modalities exist to compare against each other, once trade's
+real per-commodity data lands) but still entirely unpopulated (`None`)
+— deliberately deferred rather than attempted this pass, to keep each
+increment reviewable rather than compounding scope; no historical
+time-series collection yet (single-snapshot data for all four
+modalities so far — Experiment A/B's tiered/sparsity comparisons need a
+real multi-date sample, not one day); the numeric success criteria for
+H1–H5 (flagged in Success Metrics as needing to be pinned down once
+real data exists) are still undecided.
