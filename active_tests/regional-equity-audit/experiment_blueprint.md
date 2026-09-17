@@ -1072,13 +1072,49 @@ live end-to-end — the next real `update_price_forecasts`/
 `evaluate_forecast_accuracy` run will populate and check it. Full
 detail in `product/PRODUCTION_AUDIT.md`'s 2026-09-17 entries.
 
-**Reopen criteria**:
-1. ~~Apply migration 048 to production~~ — **done, 2026-09-17.**
-2. Defensively add the `Element Code == _PP_ELEMENT` check to
-   `services/market/faostat_prices.py`'s parsing loop anyway (lines
-   ~200-209) — confirmed unnecessary for this specific incident, but
-   still a real gap: nothing currently stops a future FAOSTAT API
-   response from leaking a wrong-element row undetected.
-3. Re-run `sync_faostat_prices` for all 8 countries now that `_login()`
-   is fixed, to get current-year data instead of the stale 2015/2019
-   single-year anchors this whole investigation was triggered by.
+**Reopen criteria — all 3 closed, 2026-09-17:**
+1. ~~Apply migration 048 to production~~ — **done.**
+2. ~~Defensively add the `Element Code == _PP_ELEMENT` check~~ —
+   **done.** Added to the `by_item` selection loop; any row whose
+   `Element Code` doesn't match `5532` is now skipped before being
+   considered, rather than trusting the API's `element` query filter
+   alone. Verified: `ruff` clean, `mypy` findings on the file identical
+   before/after via `git stash` (0 new).
+3. ~~Re-run `sync_faostat_prices` for RW/BI now that `_login()` is
+   fixed~~ — **done, and resolved cleanly**: re-synced with the working
+   login and got back the *identical* cached values (RW coffee 277.4,
+   RW tea 179.4, BI coffee 270.9, BI tea 135.5) — confirming 2015/2019
+   genuinely is FAOSTAT's most recent published data for these specific
+   country/item pairs, not an artifact of the broken login. The old
+   `_login()` bug meant nobody could even check this until now.
+
+**Follow-through, 2026-09-17 — closing the loop end-to-end:**
+- Manually triggered `evaluate_forecast_accuracy` (same mechanism used
+  twice before in this experiment) — 96 new rows evaluated for target
+  date 2026-09-17, sample grown from 192 to 288. Zero source mismatches
+  detected in this batch, but that's expected, not a null result: these
+  rows' `predicted_price` still predates migration 048 (the original
+  2026-09-13 generation batch), so `predicted_price_source` stays
+  `None` — "unknown," correctly not misread as "consistent."
+- To actually prove the mechanism end-to-end, regenerated a fresh
+  forecast batch (`update_price_forecasts`, scoped to RW/BI
+  coffee/tea) — confirmed live that the new rows (`target_date >=
+  2026-09-17`) now correctly carry `predicted_price_source: "faostat"`,
+  *and* that the predicted prices themselves are now anchored near the
+  real FAOSTAT level (RW coffee ~\$298, BI coffee ~\$285) instead of the
+  old synthetic \$2,600-3,051 baseline — `get_real_anchor_price`
+  (commit `f831fcf`) correctly kicking in for genuinely new forecasts.
+  Any future evaluation of these specific rows will have both sides of
+  `source_mismatch` populated for the first time.
+- Updated `run_audit.py` itself to be `source_mismatch`-aware (select
+  it, exclude flagged rows from `avg_mape`/coverage, surface the
+  excluded count as `n_source_mismatch_excluded` rather than folding it
+  in silently) — the production fix alone wasn't enough, since this
+  audit script computed its own independent diff and would have kept
+  reporting the same inflated RW/BI numbers otherwise. Confirmed via a
+  live re-run: `n_source_mismatch_excluded: 0` everywhere right now,
+  correctly reflecting that no currently-evaluated row has both sources
+  recorded yet — not evidence the fix doesn't work, evidence it hasn't
+  had a full forecast-to-evaluation cycle to prove itself on yet. That
+  will change automatically as new batches like the RW/BI one above get
+  evaluated on their target dates.

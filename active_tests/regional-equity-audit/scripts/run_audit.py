@@ -35,18 +35,38 @@ def _mape(actual: float, predicted: float) -> float | None:
 
 
 def audit_forecast_evaluations() -> dict[str, dict]:
+    """Real, read-only MAPE/coverage per country.
+
+    Migration 048 (2026-09-17) added source_mismatch, a generated column
+    flagging rows where predicted_price and actual_price were computed
+    under two different, non-comparable price bases (e.g. a synthetic
+    BASE_PRICES_USD anchor vs. a real FAOSTAT farm-gate price) — exactly
+    the cause of the RW/BI 881-1186% MAPE anomaly this audit found and
+    traced. Rows flagged True are excluded from avg_mape/coverage (a
+    basis mismatch isn't a forecast error) but still counted separately
+    and surfaced (n_source_mismatch), never silently dropped — matching
+    this audit's own transparency-over-silent-equalizing principle.
+    source_mismatch is NULL (not True) for any row predating this
+    migration or missing either source; those still count normally,
+    since "unknown" isn't evidence of a mismatch.
+    """
     from apps.api.config import get_supabase
 
     supabase = get_supabase()
     result = (
         supabase.table("forecast_evaluations")
-        .select("country_code,commodity,predicted_price,predicted_lower,predicted_upper,actual_price")
+        .select(
+            "country_code,commodity,predicted_price,predicted_lower,predicted_upper,"
+            "actual_price,source_mismatch"
+        )
         .not_.is_("actual_price", None)
         .execute()
     )
     rows = result.data or []
 
-    by_country: dict[str, dict] = {cc: {"n": 0, "mapes": [], "covered": 0, "with_bounds": 0} for cc in ALL_COUNTRIES}
+    by_country: dict[str, dict] = {
+        cc: {"n": 0, "mapes": [], "covered": 0, "with_bounds": 0, "source_mismatch": 0} for cc in ALL_COUNTRIES
+    }
     for row in rows:
         cc = row.get("country_code")
         if cc not in by_country:
@@ -55,6 +75,9 @@ def audit_forecast_evaluations() -> dict[str, dict]:
         predicted = row.get("predicted_price")
         if actual is None or predicted is None:
             continue
+        if row.get("source_mismatch") is True:
+            by_country[cc]["source_mismatch"] += 1
+            continue  # excluded from n/mapes/coverage below - not a real forecast error
         by_country[cc]["n"] += 1
         m = _mape(float(actual), float(predicted))
         if m is not None:
@@ -71,6 +94,7 @@ def audit_forecast_evaluations() -> dict[str, dict]:
         coverage = d["covered"] / d["with_bounds"] if d["with_bounds"] else None
         summary[cc] = {
             "n_evaluated": d["n"],
+            "n_source_mismatch_excluded": d["source_mismatch"],
             "avg_mape": avg_mape,
             "n_with_bounds": d["with_bounds"],
             "interval_coverage_rate": coverage,
