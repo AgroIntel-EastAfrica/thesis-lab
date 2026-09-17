@@ -307,10 +307,11 @@
     </p>
     <div class="status-row">
       <span class="pill"><span class="dot good"></span>All 11 framework dimensions — answered</span>
-      <span class="pill"><span class="dot good"></span>3 real production bugs — found &amp; fixed</span>
+      <span class="pill"><span class="dot good"></span>5 real production bugs — found &amp; fixed</span>
       <span class="pill"><span class="dot good"></span>RecommendationEngine comparison — complete</span>
       <span class="pill"><span class="dot warn"></span>Forecast MAPE comparison — confounded</span>
       <span class="pill"><span class="dot crit"></span>Calibration — badly miscalibrated</span>
+      <span class="pill"><span class="dot good"></span>Price-source-mismatch detection — live, verified end-to-end</span>
       <span class="pill"><span class="dot pending"></span>UG/SS/SO/CD real price data — still missing</span>
     </div>
   </header>
@@ -319,10 +320,10 @@
     <div class="eyebrow">At a glance</div>
     <div class="stat-strip">
       <div class="stat-tile"><div class="num tabular">21.1%</div><div class="label">of the live price matrix is real data, system-wide</div></div>
-      <div class="stat-tile"><div class="num tabular">3</div><div class="label">real production bugs found &amp; fixed this audit</div></div>
-      <div class="stat-tile"><div class="num tabular">2,880</div><div class="label">real forecast rows generated</div></div>
+      <div class="stat-tile"><div class="num tabular">5</div><div class="label">real production bugs found &amp; fixed this audit</div></div>
+      <div class="stat-tile"><div class="num tabular">288</div><div class="label">real forecast_evaluations rows, growing</div></div>
       <div class="stat-tile"><div class="num tabular">38.5%</div><div class="label">real interval coverage vs. ~80% stated</div></div>
-      <div class="stat-tile"><div class="num tabular">0</div><div class="label">real FAOSTAT rows for UG/SS/SO/CD</div></div>
+      <div class="stat-tile"><div class="num tabular">881–1186%</div><div class="label">MAPE from one undetected price-basis switch</div></div>
     </div>
   </section>
 
@@ -399,12 +400,12 @@
       <h3><code class="mono">forecast_evaluations</code> table shape</h3>
       <div class="chart-sub">the source of every MAPE/calibration number in this report</div>
       <div class="stat-strip" style="margin:0;">
-        <div class="stat-tile"><div class="num tabular">2,880</div><div class="label">total rows — one single batch</div></div>
+        <div class="stat-tile"><div class="num tabular">2,880+</div><div class="label">total rows across the original batch plus new ones</div></div>
         <div class="stat-tile"><div class="num tabular">100%</div><div class="label">rows with predicted bounds set</div></div>
-        <div class="stat-tile"><div class="num tabular">6.7%</div><div class="label">evaluated so far (2 of 30 days arrived)</div></div>
-        <div class="stat-tile"><div class="num tabular">30</div><div class="label">consecutive target dates, 96 rows each</div></div>
+        <div class="stat-tile"><div class="num tabular">10.0%</div><div class="label">evaluated so far (288 rows, growing)</div></div>
+        <div class="stat-tile"><div class="num tabular">30</div><div class="label">consecutive target dates, 96 rows each, per batch</div></div>
       </div>
-      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 14px 0 0;">Every calibration/MAPE figure in this report is n=96, from a single 30-day-horizon batch generated 2026-09-13 — one measurement, not yet a longitudinal sample. The two evaluated slices (2026-09-13 and 2026-09-15 target dates) are the same batch observed 2 days apart, not independent experiments.</p>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 14px 0 0;">Most calibration/MAPE figures in this report are n=96, from the original single 30-day-horizon batch generated 2026-09-13 — one measurement, not a longitudinal sample. As of 2026-09-17 the evaluated sample has grown to 288 rows via a real, manually-triggered <code>evaluate_forecast_accuracy</code> run (no live scheduler exists yet to do this automatically — see §12). A second, real evaluation window — 2026-09-13 vs. 2026-09-15, the same batch observed 2 days apart — is what surfaced the price-basis-mismatch finding in §06.</p>
     </div>
   </section>
 
@@ -467,8 +468,8 @@
 
   <section>
     <div class="eyebrow">05 · Real bugs, found and fixed during this audit</div>
-    <h2>Auditing for equity found three live production defects</h2>
-    <p class="prose">Asking these questions directly, rather than trusting the code's own description of itself, surfaced three real bugs — each found because a specific dimension of the framework demanded checking something Phase 1 alone never would have exercised. All three are fixed, verified, and merged to <code>master</code>.</p>
+    <h2>Auditing for equity found five live production defects</h2>
+    <p class="prose">Asking these questions directly, rather than trusting the code's own description of itself, surfaced five real bugs — each found because a specific dimension of the framework demanded checking something Phase 1 alone never would have exercised. All five are fixed and verified; the first three are merged to <code>master</code>, the last two are on their way through the same review process.</p>
 
     <div class="chart-card">
       <h3>1 · Fabricated prices badged as real data</h3>
@@ -508,12 +509,80 @@
       <h3>3 · Two of three geography layers were unreachable</h3>
       <div class="chart-sub">market/geography-level audit → routing bug</div>
       <p style="margin-bottom:10px;">Requesting the LOCAL or SUB_NATIONAL forecaster layer directly — the natural, first-class values, used exactly this way elsewhere in the codebase — silently returned the NATIONAL ensemble instead. An existing test had actually asserted this exact bug as intended behavior.</p>
-      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 0;">No live production impact — the only production caller hardcodes NATIONAL directly — but it blocked this audit's geography-level comparison entirely until fixed. See §09.</p>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 0;">No live production impact — the only production caller hardcodes NATIONAL directly — but it blocked this audit's geography-level comparison entirely until fixed. See §10.</p>
+    </div>
+
+    <div class="chart-card" style="margin-top:18px;">
+      <h3>4 · FAOSTAT login silently broken, indefinitely</h3>
+      <div class="chart-sub">re-verifying a prior finding → a second, unrelated real bug</div>
+      <p style="margin-bottom:10px;"><code>_login()</code> sent its request as a JSON body; FAOSTAT's <code>/auth/login</code> now rejects that with a bare <code>415</code> at the CloudFront edge, before even reaching FAOSTAT's own server. Confirmed live with real, newly-registered credentials that the identical request succeeds as a form-encoded body instead.</p>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 0;">Had been silently broken for an unknown period — the sync degrades gracefully to the synthetic baseline on any failure, so nothing ever surfaced it. Almost certainly why the cached RW/BI producer-price entries were stuck on old, never-refreshed single years (2015 / 2019). See §06.</p>
+    </div>
+
+    <div class="chart-card" style="margin-top:18px;">
+      <h3>5 · No way to detect a price-basis switch mid-evaluation</h3>
+      <div class="chart-sub">a live anomaly, traced to its actual cause → a new production mechanism</div>
+      <p style="margin-bottom:10px;"><code>evaluate_forecast_accuracy</code> stored <code>predicted_price</code> and <code>actual_price</code> with no record of which price source backed either one — so when the priority chain's preferred source changed between forecast generation and evaluation, the resulting "error" could be a basis mismatch, not a forecast failure, with nothing to tell the two apart.</p>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 0;">Full trace, mechanism, and fix in §06 — the most consequential finding of this audit's second phase.</p>
     </div>
   </section>
 
   <section>
-    <div class="eyebrow">06 · Does the gap show up where users see it?</div>
+    <div class="eyebrow">06 · A fix can silently break the comparison it was measured against</div>
+    <h2>Same commodities, same countries, one undetected basis switch — 881–1186% "error"</h2>
+    <p class="prose">Re-checking this audit two days after the 2026-09-15 EDA (2026-09-17) confirmed the standing warning that evaluation "doesn't happen passively" — zero new rows had been evaluated in the interim. But re-running the numbers surfaced something more interesting: Rwanda and Burundi's blended MAPE had jumped to 94.8% and 105.4% — worse than every data-sparse country, which would have reversed this report's own headline finding if taken at face value.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Country · commodity</th><th>Target date</th><th class="num">Predicted</th><th class="num">Actual</th><th class="num">MAPE</th></tr></thead>
+        <tbody>
+          <tr><td>Burundi coffee</td><td class="mono">2026-09-13</td><td class="num tabular">$2,680.05</td><td class="num tabular">$2,595.88</td><td class="num tabular">3.2%</td></tr>
+          <tr><td>Burundi coffee</td><td class="mono">2026-09-15</td><td class="num tabular">$2,697.91</td><td class="num tabular">$275.01</td><td class="num tabular" style="color:var(--status-critical); font-weight:600;">881.0%</td></tr>
+          <tr><td>Burundi tea</td><td class="mono">2026-09-13</td><td class="num tabular">$1,761.05</td><td class="num tabular">$1,707.78</td><td class="num tabular">3.1%</td></tr>
+          <tr><td>Burundi tea</td><td class="mono">2026-09-15</td><td class="num tabular">$1,757.44</td><td class="num tabular">$136.66</td><td class="num tabular" style="color:var(--status-critical); font-weight:600;">1186.0%</td></tr>
+          <tr><td>Rwanda coffee</td><td class="mono">2026-09-15</td><td class="num tabular">$3,030.51</td><td class="num tabular">$278.77</td><td class="num tabular" style="color:var(--status-critical); font-weight:600;">987.1%</td></tr>
+          <tr><td>Rwanda tea</td><td class="mono">2026-09-15</td><td class="num tabular">$1,794.66</td><td class="num tabular">$180.15</td><td class="num tabular" style="color:var(--status-critical); font-weight:600;">896.2%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="prose" style="margin-top:18px;">Two unrelated commodities, two countries, the same ~10× magnitude, the same single date — not a plausible real market move. Traced to source rather than accepted at face value:</p>
+    <ul class="prose" style="padding-left:20px;">
+      <li>10 of the other 12 commodities for RW/BI showed only normal-range degradation — ruling out a broad regression.</li>
+      <li>FAOSTAT's own item code 656 is confirmed to be "Coffee, green" — the standard internationally-traded form, not raw cherry — ruling out a product-basis mismatch as the cause.</li>
+      <li>Live-fetched the raw FAOSTAT rows and checked every one's <code>Element Code</code> directly: all correctly carried <code>5532</code> ("Producer Price, USD/tonne") — ruling out a wrong-element row slipping through the parsing code undetected.</li>
+      <li>While re-authenticating to check that, found a genuine, separate bug: <code>_login()</code> sent a JSON body, which FAOSTAT's <code>/auth/login</code> now rejects with a bare <code>415</code> at the CloudFront edge — confirmed live with real credentials that a form-encoded body succeeds instead. Fixed; this had been silently broken for an unknown period.</li>
+    </ul>
+
+    <div class="callout" style="margin-top:4px;">
+      <strong>The real cause: two legitimate, non-comparable price bases</strong>
+      <code>BASE_PRICES_USD</code>'s synthetic coffee/tea anchor (~$2,600–2,800/tonne for RW/BI) sits near international export-benchmark pricing. FAOSTAT's real data (~$270–280/tonne) is specifically <em>farm-gate producer</em> price — plausible for a landlocked market with Burundi's history of state-controlled coffee marketing. Neither number is wrong for what it measures; they simply aren't comparable. The 2026-09-13 forecast was generated under the old synthetic anchor; the 2026-09-15 evaluation ran <em>after</em> this session's own earlier fix (commit <code class="mono">f831fcf</code>, same day) taught <code>get_daily_price()</code> to prefer the real FAOSTAT anchor instead — an undetected mid-window basis switch, not a forecasting failure.
+    </div>
+
+    <p class="prose" style="margin-top:18px;">This is a sharper instance of the concept paper's own transparency concern than a wrong number would have been: a pipeline that composites several real sources with different implicit definitions needs to detect a <em>basis</em> change, not just fall back honestly on missing data. Provenance-as-a-label (<code>price_source: "faostat"</code>) isn't the same thing as provenance-as-a-basis (what does this number actually measure) — and it's the second real provenance incident this experiment has found and traced to completion, after the Selina Wamucii bug in §05.</p>
+
+    <div class="chart-card" style="margin-top:18px;">
+      <h3>Fixed, and proved end-to-end — not just claimed</h3>
+      <div class="chart-sub">migration 048 · <code>forecast_evaluations.source_mismatch</code></div>
+      <p style="margin-bottom:10px;">Added <code>predicted_price_source</code>, <code>actual_price_source</code>, and a generated <code>source_mismatch</code> column. A row with a confirmed mismatch still gets its <code>actual_price</code> written — nothing hidden — but is excluded from the aggregate MAE/RMSE/MAPE/coverage/ContinuousLearning feed, with the exclusion count surfaced rather than silently dropped. Applied to production and verified live.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Step</th><th>Result</th></tr></thead>
+          <tbody>
+            <tr><td>Defensive <code>Element Code</code> check added</td><td>Confirmed unnecessary for this specific incident, but a real, previously-unguarded gap — closed anyway.</td></tr>
+            <tr><td>Migration 048 applied to production</td><td>Verified live: all three columns exist, correctly return <code>NULL</code> ("unknown") on pre-migration rows.</td></tr>
+            <tr><td><code>evaluate_forecast_accuracy</code> manually triggered</td><td>Evaluated sample grown from 192 to 288 real rows.</td></tr>
+            <tr><td><code>sync_faostat_prices</code> re-run with the fixed login</td><td>Identical cached values returned — confirms 2015/2019 genuinely is FAOSTAT's latest data for these pairs, not a sync-failure artifact.</td></tr>
+            <tr><td>Fresh forecast batch regenerated (RW/BI coffee/tea)</td><td>New rows correctly carry <code>predicted_price_source: "faostat"</code>, with predictions now anchored near the real level (~$285–298) instead of the old synthetic $2,600–3,051 baseline.</td></tr>
+            <tr><td>This report's own <code>run_audit.py</code> updated</td><td>Now <code>source_mismatch</code>-aware — the production fix alone didn't help this script, which computed its own independent diff.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow">07 · Does the gap show up where users see it?</div>
     <h2>RecommendationEngine: real, live comparison</h2>
     <p class="prose">Two independent live calls, hours apart, 2026-09-13 (numbers shown from the second). Hypothesis: data-sparse countries should score worse on all three. Confidence moved in that direction, weakly — the other two reversed, consistently across both runs.</p>
     <div class="chart-row">
@@ -545,7 +614,7 @@
   </section>
 
   <section>
-    <div class="eyebrow">07 · Does the gap show up in forecast accuracy?</div>
+    <div class="eyebrow">08 · Does the gap show up in forecast accuracy?</div>
     <h2>Forecast MAPE &amp; interval coverage, by tier</h2>
     <p class="prose">From the same 2,880 real forecast rows, evaluated against real resolved prices, 2026-09-13. MAPE is <em>reversed</em> from the hypothesis — but this comparison is confounded (see callout) and should not be read as "the system serves data-sparse countries better."</p>
     <div class="chart-row">
@@ -567,7 +636,7 @@
   </section>
 
   <section>
-    <div class="eyebrow">08 · The sharper finding</div>
+    <div class="eyebrow">09 · The sharper finding</div>
     <h2>Stated confidence vs. real, measured accuracy</h2>
     <p class="prose">System-wide, n=96, 2026-09-13 — the first real calibration measurement this system has ever produced. The forecaster's confidence values are hand-set constants per model layer (Prophet: <code class="mono">0.80</code> trained / <code class="mono">0.70</code> fallback; XGBoost: <code class="mono">0.85 − 0.01×day</code> trained / <code class="mono">0.65</code> fallback, blended 60/40 in the national ensemble). Which tier applies is gated only by <code class="mono">MIN_TRAINING_POINTS = 14</code> — a check on history <em>length</em>, blind to whether that history is real market data or a same-length synthetic walk.</p>
     <div class="chart-card">
@@ -586,7 +655,7 @@
   </section>
 
   <section>
-    <div class="eyebrow">09 · Does the equity picture change by geography level?</div>
+    <div class="eyebrow">10 · Does the equity picture change by geography level?</div>
     <h2>LOCAL, SUB_NATIONAL, NATIONAL — three layers, same answer</h2>
     <p class="prose">Once the routing bug above was fixed, the three real forecaster layers (XGBoost/LOCAL, Prophet/SUB_NATIONAL, ensemble/NATIONAL) were compared directly for maize, all 8 countries, 2026-09-15.</p>
     <div class="chart-card">
@@ -604,12 +673,12 @@
         <div class="cmp-label">NATIONAL (ensemble)</div>
         <div class="cmp-track"><div class="cmp-fill tabular" style="width:81.2%; background:var(--text-tertiary);"><span class="cmp-fill-label">0.812 — all 8 countries</span></div></div>
       </div>
-      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 14px 0 0;">Confidence is a flat, hand-set constant per layer — identical across every country regardless of data tier, at every geography level. This closes the "market" axis with a real answer: there's no equity disparity by geography level, but only because the confidence mechanism is uniformly disconnected from both country and level — the same root cause the calibration finding (§08) already identified, now confirmed to hold at LOCAL and SUB_NATIONAL too, not just NATIONAL.</p>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 14px 0 0;">Confidence is a flat, hand-set constant per layer — identical across every country regardless of data tier, at every geography level. This closes the "market" axis with a real answer: there's no equity disparity by geography level, but only because the confidence mechanism is uniformly disconnected from both country and level — the same root cause the calibration finding (§09) already identified, now confirmed to hold at LOCAL and SUB_NATIONAL too, not just NATIONAL.</p>
     </div>
   </section>
 
   <section>
-    <div class="eyebrow">10 · The complete answer</div>
+    <div class="eyebrow">11 · The complete answer</div>
     <h2>All 11 framework dimensions</h2>
     <p class="prose">The original brief asked whether AI reliability changes according to geography, commodity, market, data availability, and source coverage — investigated via uncertainty, calibration, provenance, transparency, abstention, and subgroup performance. All 11 now have a real, evidenced answer.</p>
     <div class="table-wrap">
@@ -618,11 +687,11 @@
         <tbody>
           <tr><td class="num">1</td><td><strong>Geography</strong></td><td>Real data gap exists, but doesn't cleanly translate to a service-quality gap in either user-facing layer tested.</td></tr>
           <tr><td class="num">2</td><td><strong>Commodity</strong></td><td>Varies sharply — sweet potatoes worst-calibrated (12.5% coverage), soybeans best (50%), both far below stated ~80%.</td></tr>
-          <tr><td class="num">3</td><td><strong>Market</strong> (geography level)</td><td>No disparity by level — confidence is a flat constant at LOCAL, SUB_NATIONAL, and NATIONAL alike (§09).</td></tr>
+          <tr><td class="num">3</td><td><strong>Market</strong> (geography level)</td><td>No disparity by level — confidence is a flat constant at LOCAL, SUB_NATIONAL, and NATIONAL alike (§10).</td></tr>
           <tr><td class="num">4</td><td><strong>Data availability</strong></td><td>Quantified precisely: 21.1% real coverage system-wide, exact 100%-vs-0% split by country tier (§02).</td></tr>
           <tr><td class="num">5</td><td><strong>Source coverage</strong></td><td>FAOSTAT is the only functioning real source; UN Comtrade independently confirms the same zero for SS/SO on a different data type.</td></tr>
           <tr><td class="num">6</td><td><strong>Uncertainty</strong></td><td>Reported, but hand-set per layer, never derived from historical accuracy — confirmed at all 3 geography levels.</td></tr>
-          <tr><td class="num">7</td><td><strong>Calibration</strong></td><td>Measured directly: 38.5% real interval coverage vs. ~80% stated — first real calibration number this system has produced (§08).</td></tr>
+          <tr><td class="num">7</td><td><strong>Calibration</strong></td><td>Measured directly: 38.5% real interval coverage vs. ~80% stated — first real calibration number this system has produced (§09).</td></tr>
           <tr><td class="num">8</td><td><strong>Provenance</strong></td><td>Design is honest by inspection, but was <em>actively wrong</em> in production until this audit found and fixed the Selina cache bug (§05).</td></tr>
           <tr><td class="num">9</td><td><strong>Transparency</strong></td><td>Per-item dashboard badges are honest and equitable across tiers; one gap — the top-level source label doesn't vary per response.</td></tr>
           <tr><td class="num">10</td><td><strong>Abstention</strong></td><td>Real, working mechanism (<code>evidence_sufficient</code>) — genuinely varies by country (0.308–0.667), not hardcoded.</td></tr>
@@ -633,7 +702,7 @@
   </section>
 
   <section>
-    <div class="eyebrow">11 · Honest summary</div>
+    <div class="eyebrow">12 · Honest summary</div>
     <h2>What's confirmed, what isn't, what's still open</h2>
     <div class="table-wrap">
       <table>
@@ -647,13 +716,14 @@
           <tr><td>The whole system is poorly calibrated (regardless of tier)</td><td>Confirmed, now at 2 of 3 geography levels too</td><td><span class="src-badge src-pending">medium — n=96, one day</span></td></tr>
           <tr><td>Provenance/transparency disclosure is equitable by design</td><td>Confirmed for the design; was violated in production by a real bug, now fixed</td><td><span class="src-badge src-real">high — live incident found &amp; fixed</span></td></tr>
           <tr><td>Geography level (market) introduces its own equity gap</td><td>Not confirmed — flat confidence at every level, for every country</td><td><span class="src-badge src-real">high — live, post-fix comparison</span></td></tr>
+          <tr><td>An undetected price-basis switch can masquerade as a forecast error large enough to flip a headline finding</td><td>Confirmed — 881–1186% MAPE on RW/BI coffee/tea, traced to source, mechanism fixed and verified end-to-end (§06)</td><td><span class="src-badge src-real">high — live trace, live fix, live re-verification</span></td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <footer>
-    <p>Generated 2026-09-13 through 2026-09-15 from live, unmocked calls against production Supabase, Redis, FAOSTAT, and UN Comtrade — see <code>thesis-lab/active_tests/regional-equity-audit/experiment_blueprint.md</code> and <code>thesis-lab/active_tests/forecast-confidence-calibration/experiment_blueprint.md</code> for the full run log, including the three real bugs found and fixed during this audit (all merged to <code>master</code>).</p>
+    <p>Generated 2026-09-13 through 2026-09-17 from live, unmocked calls against production Supabase, Redis, FAOSTAT, and UN Comtrade — see <code>thesis-lab/active_tests/regional-equity-audit/experiment_blueprint.md</code> and <code>thesis-lab/active_tests/forecast-confidence-calibration/experiment_blueprint.md</code> for the full run log, including the five real bugs found and fixed during this audit (all pushed; the first three merged to <code>master</code>, the last two pending merge).</p>
     <p>Paper 14 of the AgroIntel PhD thesis publication roadmap · <code>thesis-lab/PUBLICATION_ROADMAP.md</code></p>
   </footer>
 

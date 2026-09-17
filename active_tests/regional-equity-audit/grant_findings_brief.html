@@ -192,7 +192,7 @@
     <p class="subtitle">A live, running audit of AgroIntel — the East African agricultural intelligence platform serving as the experimental testbed for <em>"Agentic Agricultural Intelligence: Learning to Forecast, Reason Over, and Act on Multimodal Market and Climate Signals in Data-Sparse Environments."</em> This is a research log of work in progress, not a closed study.</p>
     <div class="meta-row">
       <span>Jeremiah Masaba · PhD Student, Computer Science, Makerere University</span>
-      <span>Observation window: 2026-09-13 – 2026-09-16</span>
+      <span>Observation window: 2026-09-13 – 2026-09-17</span>
       <span class="status-pill"><span class="dot"></span>active — new evidence accumulating weekly</span>
     </div>
   </header>
@@ -227,7 +227,7 @@
         <tbody>
           <tr><td><strong>FAOSTAT</strong> Producer Prices</td><td>Annual real producer price per commodity per country, element 5532 (USD/tonne), from the FAO's own statistical API</td><td>1,284–824–574–274 rows for Kenya/Rwanda/Burundi/Tanzania respectively; 0 for the other 4 countries</td><td>Live authenticated REST calls</td></tr>
           <tr><td><strong>UN Comtrade</strong></td><td>International trade flow value (import/export) by commodity, partner, and year</td><td>Queried for South Sudan &amp; Somalia, all commodities, 2022–2023</td><td>Live authenticated REST calls</td></tr>
-          <tr><td><strong><code>forecast_evaluations</code></strong></td><td>Persisted forecaster output (predicted price, confidence interval) matched against the real resolved price once its target date arrives</td><td>2,880 rows total (one 30-day-horizon batch, 8 countries × 12 commodities × 30 days); 192 evaluated so far</td><td>Production Postgres (Supabase)</td></tr>
+          <tr><td><strong><code>forecast_evaluations</code></strong></td><td>Persisted forecaster output (predicted price, confidence interval) matched against the real resolved price once its target date arrives</td><td>2,880+ rows total (original 30-day-horizon batch, 8 countries × 12 commodities × 30 days, plus newer ones); 288 evaluated so far</td><td>Production Postgres (Supabase)</td></tr>
           <tr><td><strong>Recommendation engine live output</strong></td><td>Per-recommendation confidence, evidence-sufficiency flag, and supporting-signal count from the platform's real recommendation service</td><td>2 independent live runs, 139–149 recommendations each, all 8 countries</td><td>Direct service call</td></tr>
           <tr><td><strong>Live price-resolution matrix</strong></td><td>Which underlying source (real or synthetic) actually backs the price shown for every commodity/country pair right now</td><td>408 pairs (8 countries × 51 tracked commodities)</td><td>Direct service call, full enumeration</td></tr>
         </tbody>
@@ -349,18 +349,18 @@
       <h3><code>forecast_evaluations</code> table shape</h3>
       <div class="chart-sub">the source of every calibration/MAPE figure in this report</div>
       <div class="stat-strip" style="margin:0;">
-        <div class="stat-tile"><div class="num tabular">2,880</div><div class="label">total rows — one single batch</div></div>
+        <div class="stat-tile"><div class="num tabular">2,880+</div><div class="label">total rows — original batch plus new ones</div></div>
         <div class="stat-tile"><div class="num tabular">100%</div><div class="label">rows with predicted confidence bounds set</div></div>
-        <div class="stat-tile"><div class="num tabular">6.7%</div><div class="label">evaluated so far (2 of 30 target dates arrived)</div></div>
-        <div class="stat-tile"><div class="num tabular">30</div><div class="label">consecutive target dates, 96 rows each</div></div>
+        <div class="stat-tile"><div class="num tabular">10.0%</div><div class="label">evaluated so far (288 rows, growing)</div></div>
+        <div class="stat-tile"><div class="num tabular">30</div><div class="label">consecutive target dates, 96 rows each, per batch</div></div>
       </div>
-      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 14px 0 0;">Every calibration figure in this report is n=96, from a single 30-day-horizon batch — one measurement, not yet a longitudinal sample. See §7, Limitations.</p>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 14px 0 0;">Most calibration figures in this report are n=96, from the original single 30-day-horizon batch — one measurement, not yet a longitudinal sample. See §7, Limitations. As of 2026-09-17 the evaluated sample stands at 288, grown via a real, manually-triggered evaluation run — no live scheduler exists yet to do this automatically.</p>
     </div>
   </section>
 
   <section id="findings">
     <div class="num-label">4 · Preliminary findings</div>
-    <h2>Seven findings so far</h2>
+    <h2>Eight findings so far</h2>
 
     <div class="finding">
       <div class="finding-head"><span class="finding-num">1</span><h3>The data gap is real and structural — but doesn't cleanly predict worse service <span class="status-tag done">tested</span></h3></div>
@@ -441,6 +441,24 @@
     <div class="finding">
       <div class="finding-head"><span class="finding-num">7</span><h3>A working abstention mechanism already exists and responds to real evidence <span class="status-tag done">tested</span></h3></div>
       <p>The recommendation engine withholds a recommendation when supporting signals fall below a threshold rather than answering regardless. Measured live: the gate's firing rate genuinely varies by country — from 30.8% to 66.7% — evidence it is a functioning, data-responsive decision point, not a static placeholder. This is a working, simple instance of exactly the recommend-or-abstain decision at the center of the proposal's RQ4.</p>
+    </div>
+
+    <div class="finding">
+      <div class="finding-head"><span class="finding-num">8</span><h3>An undetected source switch can look like an 1186% forecast error <span class="status-tag done">found &amp; fixed</span></h3></div>
+      <p>Re-checking this experiment two days later (2026-09-17) surfaced a result that would have reversed Finding 1's own conclusion if trusted at face value: Rwanda and Burundi's blended forecast error jumped to 94.8% and 105.4% MAPE — worse than every data-sparse country. Traced to two specific commodities, coffee and tea, on one specific evaluation date:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Country · commodity</th><th class="num">Predicted</th><th class="num">Actual</th><th class="num">MAPE</th></tr></thead>
+          <tbody>
+            <tr><td>Burundi coffee</td><td class="num tabular">$2,697.91</td><td class="num tabular">$275.01</td><td class="num tabular"><strong>881.0%</strong></td></tr>
+            <tr><td>Burundi tea</td><td class="num tabular">$1,757.44</td><td class="num tabular">$136.66</td><td class="num tabular"><strong>1186.0%</strong></td></tr>
+            <tr><td>Rwanda coffee</td><td class="num tabular">$3,030.51</td><td class="num tabular">$278.77</td><td class="num tabular"><strong>987.1%</strong></td></tr>
+            <tr><td>Rwanda tea</td><td class="num tabular">$1,794.66</td><td class="num tabular">$180.15</td><td class="num tabular"><strong>896.2%</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="margin-top:12px;">Not a data error on either side: FAOSTAT's own item code was confirmed to be the standard traded commodity form, and every raw row returned the correct data element on direct inspection. The real cause was a genuine basis mismatch — the forecast was generated under a synthetic anchor calibrated near international export-benchmark prices (~$2,600–2,800/tonne), then evaluated after this platform's own Finding-5 fix (same day) switched the live price to a real FAOSTAT farm-gate producer price (~$270–280/tonne) instead. Two legitimate, non-comparable ways of pricing the same commodity, not a forecasting failure — but indistinguishable from one without a way to detect the switch.</p>
+      <p style="font-size:0.82rem; color:var(--text-secondary); margin: 10px 0 0;">Fixed at the mechanism level, not the number: the system now records which price source backed each side of an evaluation, and excludes a row from aggregate accuracy metrics only when the two are known and differ — never silently, the exclusion count is always surfaced. Verified live end-to-end: a freshly regenerated forecast now correctly records its source, anchored within a few percent of the real price. Found while re-verifying this, and fixed in the same pass: the FAOSTAT API login had been silently rejecting every sync attempt for an unknown period (a request-format change on FAOSTAT's side), which is almost certainly why the cached real prices behind this report were frozen on old data.</p>
     </div>
   </section>
 
@@ -526,10 +544,12 @@
     <h2>What's done, what's actively in progress</h2>
     <ul class="ongoing-list">
       <li><span class="marker done">✓</span><span>Geography, data-availability, and source-coverage dimensions tested with real, live data (§4, Findings 1–3).</span></li>
-      <li><span class="marker done">✓</span><span>Three real defects found and fixed against the live system: a provenance incident, an unvalidated training anchor, and a forecaster routing bug.</span></li>
-      <li><span class="marker open">○</span><span>Calibration fix deliberately deferred: only 192 evaluated forecast rows exist today, too few to safely fit a data-derived calibration adjustment without risking overfit to sampling noise. Waiting for more real evaluated history before building this.</span></li>
-      <li><span class="marker open">○</span><span>A fifth candidate real data source (WFP DataBridges, built for exactly the food-insecure/crisis contexts this study concerns) is pending an external registration step.</span></li>
+      <li><span class="marker done">✓</span><span>Five real defects found and fixed against the live system: a provenance incident, an unvalidated training anchor, a forecaster routing bug, a silently-broken external API login, and an undetected price-basis-switch mechanism (Finding 8).</span></li>
+      <li><span class="marker done">✓</span><span>The price-basis-switch fix (Finding 8) was verified end-to-end, not just merged: a fresh forecast was regenerated and confirmed to record its real source correctly, and the evaluated sample was grown from 192 to 288 rows via a real, manually-triggered run.</span></li>
+      <li><span class="marker open">○</span><span>Calibration fix deliberately deferred: 288 evaluated forecast rows exist today, still too few to safely fit a data-derived calibration adjustment without risking overfit to sampling noise. Waiting for more real evaluated history before building this.</span></li>
+      <li><span class="marker open">○</span><span>A sixth candidate real data source (WFP DataBridges, built for exactly the food-insecure/crisis contexts this study concerns) is pending an external registration step.</span></li>
       <li><span class="marker open">○</span><span>Commodity-level figures for cassava, rice, sorghum, beans, and coffee need a post-fix re-measurement to replace figures flagged uncertain after Finding 6.</span></li>
+      <li><span class="marker open">○</span><span>No live scheduler yet triggers daily forecast evaluation automatically — growing the evaluated sample currently requires a manual run each time, a real operational gap distinct from any of the code fixes above.</span></li>
       <li><span class="marker open">○</span><span>Represent, Retrieve, Reason, and Learn (Fig. 2) — the multimodal, evidence-retrieval, and continual-learning core of the proposed PhD work — have not yet been started against this platform.</span></li>
     </ul>
   </section>
