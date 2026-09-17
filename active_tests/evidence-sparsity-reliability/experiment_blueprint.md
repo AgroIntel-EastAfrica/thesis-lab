@@ -3,9 +3,11 @@
 - **Owner:**
 - **Started:** 2026-09-17
 - **Status:** active — Phase 0 in progress. 2 of 4–5 evidence modalities
-  built and run live 2026-09-17 (price, weather); trade, production,
-  and textual-event modalities not yet started. Evidence Quality Vector
-  still unpopulated (technically computable now, deliberately deferred).
+  fully collected live 2026-09-17 (price, weather); trade built but
+  blocked mid-run by a real UN Comtrade API rate limit (reopen item:
+  re-run after ~2026-09-18 03:00 UTC); production and textual-event
+  modalities not yet started. Evidence Quality Vector still unpopulated
+  (technically computable now, deliberately deferred).
 - **Paper:** Paper 14 — redesigned title: **"Trustworthy Agricultural
   Intelligence Under Data Sparsity: An Empirical Study of Evidence
   Availability, Uncertainty, and Reliability"** (previously "Trustworthy
@@ -710,13 +712,69 @@ directly, not just "it ran" — every value, unit, and the walked-back
 `observation_date` cross-checked against the live test call's own raw
 NASA POWER response.
 
-**What Phase 0 still needs, honestly not yet done**: trade, production,
-and textual-event collection scripts (2 modalities now built of the
-planned 4–5); the `EvidenceQualityVector`'s 7 dimensions are *now
-technically computable* (two modalities exist to compare against each
-other) but still entirely unpopulated (`None`) — deliberately deferred
-rather than attempted this pass, to keep each increment reviewable
-rather than compounding scope; no historical time-series collection yet
+### Phase 0, third slice — 2026-09-17: trade modality, blocked mid-run by
+a real API rate limit (itself a genuine finding, not just an obstacle)
+
+**Built**: `scripts/collect_trade.py`, against the real UN Comtrade API
+(`clients/comtrade.py`). Real shape difference from price/weather,
+confirmed via a live test call first: `get_trade_flows()` returns one
+row **per trading partner** (73 real rows for Kenya coffee exports,
+2023), not a single aggregate figure — trade flows measure total export
+*value* (USD), not a unit price, a fundamentally different kind of
+measurement than the price modality's USD/tonne. Each observation here
+sums `primaryValue` across every real partner row Comtrade returns for
+a given reporter/commodity/year — an honest aggregation of real data,
+recorded under its own `variable` name (`export_value_total`) rather
+than conflated with "price."
+
+**What actually happened live**: the standalone test call for Kenya
+coffee succeeded (73 real rows, e.g. two sample partner rows worth
+$572,089.59 and $51,518.97 — genuinely non-zero, confirming real trade
+data exists for this reporter/commodity/year). But running the full
+12-call collector (4 countries × 3 commodities) immediately hit UN
+Comtrade's real API quota: `403 "Out of call volume quota. Quota will
+be replenished in 07:37:XX"` — a genuine, live rate limit, not a bug in
+this script, and the same fallback path the client tries on failure
+hit the identical quota (same underlying account, no separate rescue).
+All 12 observations correctly recorded as `DataState.UNKNOWN` — the
+collector deliberately does **not** treat a rate-limited call as
+confirmed-zero trade, which would be a real false negative
+indistinguishable from the SS/SO "genuinely zero" finding the concluded
+experiment already established for the `TOTAL` commodity code. This
+run cannot yet confirm or deny that same zero holds per-commodity for
+coffee/maize/tea specifically — that's still an open question, not
+assumed to match.
+
+**Why this is a real finding worth keeping, not just an obstacle**: an
+evidence source's own operational rate limits are themselves a
+dimension of evidence availability a production agentic system has to
+handle — this is a live, concrete instance of failure mode F4 (source
+reliability failure, see the taxonomy above) happening to this exact
+experiment while building it, not a hypothetical. Directly relevant to
+Experiment C (evidence corruption: "missing source") and Experiment E3
+(does the agent detect the problem rather than silently treating a
+failed call as a zero-evidence signal?).
+
+**Reopen item**: re-run `collect_trade.py` once the quota replenishes
+(~7.5h from 2026-09-17 19:22 UTC, i.e. roughly 2026-09-18 03:00 UTC) to
+get the real, complete per-commodity picture for all 4 countries — not
+yet done as of this entry.
+
+**Verified**: `ruff check` clean. The one real successful call (KE
+coffee, 73 partner rows) was inspected directly before the quota hit;
+the 12-row `UNKNOWN` batch was verified to be the correct, honest
+degradation path, not a crash or a silently-wrong zero.
+
+**What Phase 0 still needs, honestly not yet done**: the trade
+modality's real per-commodity data (blocked on the quota reset above,
+not yet re-attempted); production and textual-event collection scripts
+(2 of the planned 4–5 modalities remain unbuilt); the
+`EvidenceQualityVector`'s 7 dimensions are *now technically computable*
+(three modalities exist to compare against each other, once trade's
+real data lands) but still entirely unpopulated (`None`) — deliberately
+deferred rather than attempted this pass, to keep each increment
+reviewable rather than compounding scope; no historical time-series
+collection yet
 (single-snapshot data for both modalities so far — Experiment A/B's
 tiered/sparsity comparisons need a real multi-date sample, not one day);
 the numeric success criteria for H1–H5 (flagged in Success Metrics as
