@@ -57,6 +57,8 @@ async def collect_one(country: str, commodity: str) -> GoldStandardObservation:
 
     return GoldStandardObservation(
         country_code=country,
+        modality="price",
+        variable="producer_price",
         commodity=commodity,
         observation_date=result.get("date", now[:10]),
         value=result["price_usd"],

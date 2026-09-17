@@ -1,10 +1,11 @@
 # Experiment: evidence-sparsity-reliability
 
 - **Owner:**
-- **Started:** 2026-09-17 (design phase; Phase 0 build not yet started)
-- **Status:** active — Phase 0 in progress (schema + price-modality
-  collection built and run live 2026-09-17; weather/trade/production/
-  textual-event modalities not yet started)
+- **Started:** 2026-09-17
+- **Status:** active — Phase 0 in progress. 2 of 4–5 evidence modalities
+  built and run live 2026-09-17 (price, weather); trade, production,
+  and textual-event modalities not yet started. Evidence Quality Vector
+  still unpopulated (technically computable now, deliberately deferred).
 - **Paper:** Paper 14 — redesigned title: **"Trustworthy Agricultural
   Intelligence Under Data Sparsity: An Empirical Study of Evidence
   Availability, Uncertainty, and Reliability"** (previously "Trustworthy
@@ -653,13 +654,70 @@ not partial. Sample row (KE coffee):
 `get_daily_price()` check used to finalize country/commodity selection
 above.
 
-**What Phase 0 still needs, honestly not yet done**: weather, trade,
-production, and textual-event collection scripts (the other 4–5
-evidence modalities); the `EvidenceQualityVector`'s 7 dimensions remain
-entirely unpopulated (`None`) until a second modality exists to compute
-`compatibility`/`geographic_coverage`/etc. against; no historical
-time-series collection yet (today's snapshot only — Experiment A/B's
-tiered/sparsity comparisons need a real multi-date sample, not one
-day); the numeric success criteria for H1–H5 (flagged in Success
-Metrics as needing to be pinned down once real data exists) are still
-undecided.
+### Phase 0, second slice — 2026-09-17: weather modality, and a schema revision
+
+**Schema revision, before any data outside the first price-only demo
+depended on the narrower shape**: `GoldStandardObservation`'s single
+`commodity` field couldn't honestly name what weather data measures (a
+temperature reading isn't a commodity). Added `modality` (`"price"` /
+`"weather"` / …) and `variable` (the specific measured quantity, e.g.
+`"producer_price"`, `"temperature_2m"`); `commodity` is now optional,
+`None` for modalities with no crop subject. The price collector was
+updated to match and re-run — same clean 6/6 observed/synthetic split
+as before, confirming the schema change didn't alter the underlying
+data, just how it's labeled.
+
+**Built**: `scripts/collect_weather.py`, against the real NASA POWER API
+(`clients/nasa_power.py`), for the same 4-country scope, real capital
+coordinates read directly from `configs/countries/<name>.yaml` (Nairobi,
+Kigali, Juba, Mogadishu — not re-derived or guessed).
+
+**A real data-quality nuance found and handled, not glossed over**: a
+live test call before writing the script showed NASA POWER returns
+`-999.0` as a fill-value sentinel for a date it hasn't finished
+processing yet — the most recent 3 days of a test query all came back
+`-999.0`. Naively treating that as a real value would have been exactly
+the kind of provenance mistake this whole experiment exists to prevent.
+The collector walks backward from today to find each parameter's most
+recent genuinely-available reading and records *that real date* as
+`observation_date` — an honest freshness signal — rather than claiming
+today's date for a stale or fabricated value.
+
+**Run live, 2026-09-17**: 8 real observations (4 countries × 2
+parameters — temperature and precipitation) —
+
+```
+KE temperature_2m: 20.95 celsius (as of 2026-09-14)   KE precipitation: 0.28 mm/day
+RW temperature_2m: 21.07 celsius (as of 2026-09-14)   RW precipitation: 4.97 mm/day
+SS temperature_2m: 29.63 celsius (as of 2026-09-14)   SS precipitation: 4.69 mm/day
+SO temperature_2m: 26.80 celsius (as of 2026-09-14)   SO precipitation: 1.97 mm/day
+```
+
+All 8 rows are `observed_verified` — **including South Sudan and
+Somalia**, the two countries with zero real price coverage. This is a
+genuinely interesting, confirmed real finding, not an assumption: unlike
+price, weather evidence is **uniformly available across both country
+tiers** — NASA POWER's satellite coverage doesn't care whether a country
+has a functioning national statistics office submitting data to FAO.
+Directly demonstrates the blueprint's own point that evidence
+availability is a per-modality property, not a fixed per-country one —
+the same country can be data-rich on one evidence axis and data-sparse
+on another, which is precisely why the redesign treats evidence
+availability as an experimental factor rather than a country label.
+
+**Verified**: `ruff check` clean on both scripts. Output inspected
+directly, not just "it ran" — every value, unit, and the walked-back
+`observation_date` cross-checked against the live test call's own raw
+NASA POWER response.
+
+**What Phase 0 still needs, honestly not yet done**: trade, production,
+and textual-event collection scripts (2 modalities now built of the
+planned 4–5); the `EvidenceQualityVector`'s 7 dimensions are *now
+technically computable* (two modalities exist to compare against each
+other) but still entirely unpopulated (`None`) — deliberately deferred
+rather than attempted this pass, to keep each increment reviewable
+rather than compounding scope; no historical time-series collection yet
+(single-snapshot data for both modalities so far — Experiment A/B's
+tiered/sparsity comparisons need a real multi-date sample, not one day);
+the numeric success criteria for H1–H5 (flagged in Success Metrics as
+needing to be pinned down once real data exists) are still undecided.

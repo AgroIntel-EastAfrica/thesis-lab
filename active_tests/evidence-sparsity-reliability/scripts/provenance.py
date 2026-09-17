@@ -60,18 +60,25 @@ class EvidenceQualityVector(BaseModel):
 
 class GoldStandardObservation(BaseModel):
     """One row of the gold-standard dataset. Field set matches the
-    blueprint's spec exactly: country, commodity, market, geography,
-    date, value, unit, price_basis, source, source_timestamp,
-    data_quality, observed/synthetic."""
+    blueprint's spec (country, commodity, market, geography, date, value,
+    unit, price_basis, source, source_timestamp, data_quality,
+    observed/synthetic), generalized beyond price with `modality` +
+    `variable` once the weather modality made clear a single `commodity`
+    field can't name what's actually being measured across modalities
+    (a temperature reading isn't a commodity) - revised here, before any
+    real data outside the first price-only demo run depended on the
+    narrower shape."""
 
     country_code: str
-    commodity: str
+    modality: str  # "price" | "weather" | "trade" | "production" | "text"
+    variable: str  # the specific measured quantity, e.g. "producer_price", "temperature_2m"
+    commodity: str | None = None  # set for price/trade/production; None for modalities with no crop subject (e.g. weather)
     market: str = "national"
     geography_level: str = "NATIONAL"
     observation_date: str  # ISO date this value applies to
     value: float
     unit: str
-    price_basis: str
+    price_basis: str  # kept as the field name for backward-compat with the blueprint spec; for non-price modalities this names the measurement basis (e.g. "nasa_power_merra2_geosit")
     source: str
     source_timestamp: str  # when this value was actually fetched, ISO datetime
     data_state: DataState

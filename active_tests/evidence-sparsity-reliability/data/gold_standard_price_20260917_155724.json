@@ -1,6 +1,8 @@
 [
   {
     "country_code": "KE",
+    "modality": "price",
+    "variable": "producer_price",
     "commodity": "coffee",
     "market": "national",
     "geography_level": "NATIONAL",
@@ -9,7 +11,7 @@
     "unit": "USD/tonne",
     "price_basis": "producer_price_faostat_usd_tonne",
     "source": "faostat",
-    "source_timestamp": "2026-09-17T14:55:47.309311+00:00",
+    "source_timestamp": "2026-09-17T15:57:24.599311+00:00",
     "data_state": "observed_verified",
     "evidence_quality": {
       "availability": null,
@@ -20,10 +22,12 @@
       "provenance": null,
       "geographic_coverage": null
     },
-    "collected_at": "2026-09-17T14:55:47.309311+00:00"
+    "collected_at": "2026-09-17T15:57:24.599311+00:00"
   },
   {
     "country_code": "KE",
+    "modality": "price",
+    "variable": "producer_price",
     "commodity": "maize",
     "market": "national",
     "geography_level": "NATIONAL",
@@ -32,7 +36,7 @@
     "unit": "USD/tonne",
     "price_basis": "producer_price_faostat_usd_tonne",
     "source": "faostat",
-    "source_timestamp": "2026-09-17T14:55:47.357922+00:00",
+    "source_timestamp": "2026-09-17T15:57:24.604649+00:00",
     "data_state": "observed_verified",
     "evidence_quality": {
       "availability": null,
@@ -43,10 +47,12 @@
       "provenance": null,
       "geographic_coverage": null
     },
-    "collected_at": "2026-09-17T14:55:47.357922+00:00"
+    "collected_at": "2026-09-17T15:57:24.604649+00:00"
   },
   {
     "country_code": "KE",
+    "modality": "price",
+    "variable": "producer_price",
     "commodity": "tea",
     "market": "national",
     "geography_level": "NATIONAL",
@@ -55,7 +61,7 @@
     "unit": "USD/tonne",
     "price_basis": "producer_price_faostat_usd_tonne",
     "source": "faostat",
-    "source_timestamp": "2026-09-17T14:55:47.357922+00:00",
+    "source_timestamp": "2026-09-17T15:57:24.604649+00:00",
     "data_state": "observed_verified",
     "evidence_quality": {
       "availability": null,
@@ -66,10 +72,12 @@
       "provenance": null,
       "geographic_coverage": null
     },
-    "collected_at": "2026-09-17T14:55:47.357922+00:00"
+    "collected_at": "2026-09-17T15:57:24.604649+00:00"
   },
   {
     "country_code": "RW",
+    "modality": "price",
+    "variable": "producer_price",
     "commodity": "coffee",
     "market": "national",
     "geography_level": "NATIONAL",
@@ -78,7 +86,7 @@
     "unit": "USD/tonne",
     "price_basis": "producer_price_faostat_usd_tonne",
     "source": "faostat",
-    "source_timestamp": "2026-09-17T14:55:47.361690+00:00",
+    "source_timestamp": "2026-09-17T15:57:24.607426+00:00",
     "data_state": "observed_verified",
     "evidence_quality": {
       "availability": null,
@@ -89,10 +97,12 @@
       "provenance": null,
       "geographic_coverage": null
     },
-    "collected_at": "2026-09-17T14:55:47.361690+00:00"
+    "collected_at": "2026-09-17T15:57:24.607426+00:00"
   },
   {
     "country_code": "RW",
+    "modality": "price",
+    "variable": "producer_price",
     "commodity": "maize",
     "market": "national",
     "geography_level": "NATIONAL",
@@ -101,7 +111,7 @@
     "unit": "USD/tonne",
     "price_basis": "producer_price_faostat_usd_tonne",
     "source": "faostat",
-    "source_timestamp": "2026-09-17T14:55:47.361690+00:00",
+    "source_timestamp": "2026-09-17T15:57:24.607426+00:00",
     "data_state": "observed_verified",
     "evidence_quality": {
       "availability": null,
@@ -112,10 +122,12 @@
       "provenance": null,
       "geographic_coverage": null
     },
-    "collected_at": "2026-09-17T14:55:47.361690+00:00"
+    "collected_at": "2026-09-17T15:57:24.607426+00:00"
   },
   {
     "country_code": "RW",
+    "modality": "price",
+    "variable": "producer_price",
     "commodity": "tea",
     "market": "national",
     "geography_level": "NATIONAL",
@@ -124,7 +136,7 @@
     "unit": "USD/tonne",
     "price_basis": "producer_price_faostat_usd_tonne",
     "source": "faostat",
-    "source_timestamp": "2026-09-17T14:55:47.361690+00:00",
+    "source_timestamp": "2026-09-17T15:57:24.607426+00:00",
     "data_state": "observed_verified",
     "evidence_quality": {
       "availability": null,
@@ -135,10 +147,12 @@
       "provenance": null,
       "geographic_coverage": null
     },
-    "collected_at": "2026-09-17T14:55:47.361690+00:00"
+    "collected_at": "2026-09-17T15:57:24.607426+00:00"
   },
   {
     "country_code": "SS",
+    "modality": "price",
+    "variable": "producer_price",
     "commodity": "coffee",
     "market": "national",
     "geography_level": "NATIONAL",
@@ -147,7 +161,7 @@
     "unit": "USD/tonne",
     "price_basis": "synthetic_wholesale_baseline_usd_tonne",
     "source": "baseline",
-    "source_timestamp": "2026-09-17T14:55:47.339584+00:00",
+    "source_timestamp": "2026-09-17T15:57:24.607426+00:00",
     "data_state": "synthetic_baseline",
     "evidence_quality": {
       "availability": null,
@@ -158,10 +172,12 @@
       "provenance": null,
       "geographic_coverage": null
     },
-    "collected_at": "2026-09-17T14:55:47.341601+00:00"
+    "collected_at": "2026-09-17T15:57:24.607426+00:00"
   },
   {
     "country_code": "SS",
+    "modality": "price",
+    "variable": "producer_price",
     "commodity": "maize",
     "market": "national",
     "geography_level": "NATIONAL",
@@ -170,7 +186,7 @@
     "unit": "USD/tonne",
     "price_basis": "synthetic_wholesale_baseline_usd_tonne",
     "source": "baseline",
-    "source_timestamp": "2026-09-17T14:55:47.367790+00:00",
+    "source_timestamp": "2026-09-17T15:57:24.601559+00:00",
     "data_state": "synthetic_baseline",
     "evidence_quality": {
       "availability": null,
@@ -181,10 +197,12 @@
       "provenance": null,
       "geographic_coverage": null
     },
-    "collected_at": "2026-09-17T14:55:47.367790+00:00"
+    "collected_at": "2026-09-17T15:57:24.601559+00:00"
   },
   {
     "country_code": "SS",
+    "modality": "price",
+    "variable": "producer_price",
     "commodity": "tea",
     "market": "national",
     "geography_level": "NATIONAL",
@@ -193,7 +211,7 @@
     "unit": "USD/tonne",
     "price_basis": "synthetic_wholesale_baseline_usd_tonne",
     "source": "baseline",
-    "source_timestamp": "2026-09-17T14:55:47.367790+00:00",
+    "source_timestamp": "2026-09-17T15:57:24.607426+00:00",
     "data_state": "synthetic_baseline",
     "evidence_quality": {
       "availability": null,
@@ -204,10 +222,12 @@
       "provenance": null,
       "geographic_coverage": null
     },
-    "collected_at": "2026-09-17T14:55:47.367790+00:00"
+    "collected_at": "2026-09-17T15:57:24.607426+00:00"
   },
   {
     "country_code": "SO",
+    "modality": "price",
+    "variable": "producer_price",
     "commodity": "coffee",
     "market": "national",
     "geography_level": "NATIONAL",
@@ -216,7 +236,7 @@
     "unit": "USD/tonne",
     "price_basis": "synthetic_wholesale_baseline_usd_tonne",
     "source": "baseline",
-    "source_timestamp": "2026-09-17T14:55:47.367790+00:00",
+    "source_timestamp": "2026-09-17T15:57:24.607426+00:00",
     "data_state": "synthetic_baseline",
     "evidence_quality": {
       "availability": null,
@@ -227,10 +247,12 @@
       "provenance": null,
       "geographic_coverage": null
     },
-    "collected_at": "2026-09-17T14:55:47.367790+00:00"
+    "collected_at": "2026-09-17T15:57:24.607426+00:00"
   },
   {
     "country_code": "SO",
+    "modality": "price",
+    "variable": "producer_price",
     "commodity": "maize",
     "market": "national",
     "geography_level": "NATIONAL",
@@ -239,7 +261,7 @@
     "unit": "USD/tonne",
     "price_basis": "synthetic_wholesale_baseline_usd_tonne",
     "source": "baseline",
-    "source_timestamp": "2026-09-17T14:55:47.367790+00:00",
+    "source_timestamp": "2026-09-17T15:57:24.607426+00:00",
     "data_state": "synthetic_baseline",
     "evidence_quality": {
       "availability": null,
@@ -250,10 +272,12 @@
       "provenance": null,
       "geographic_coverage": null
     },
-    "collected_at": "2026-09-17T14:55:47.367790+00:00"
+    "collected_at": "2026-09-17T15:57:24.607426+00:00"
   },
   {
     "country_code": "SO",
+    "modality": "price",
+    "variable": "producer_price",
     "commodity": "tea",
     "market": "national",
     "geography_level": "NATIONAL",
@@ -262,7 +286,7 @@
     "unit": "USD/tonne",
     "price_basis": "synthetic_wholesale_baseline_usd_tonne",
     "source": "baseline",
-    "source_timestamp": "2026-09-17T14:55:47.367790+00:00",
+    "source_timestamp": "2026-09-17T15:57:24.607426+00:00",
     "data_state": "synthetic_baseline",
     "evidence_quality": {
       "availability": null,
@@ -273,6 +297,6 @@
       "provenance": null,
       "geographic_coverage": null
     },
-    "collected_at": "2026-09-17T14:55:47.367790+00:00"
+    "collected_at": "2026-09-17T15:57:24.607426+00:00"
   }
 ]
