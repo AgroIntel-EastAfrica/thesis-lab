@@ -2,7 +2,9 @@
 
 - **Owner:**
 - **Started:** 2026-09-17 (design phase; Phase 0 build not yet started)
-- **Status:** active — design documented, no implementation yet
+- **Status:** active — Phase 0 in progress (schema + price-modality
+  collection built and run live 2026-09-17; weather/trade/production/
+  textual-event modalities not yet started)
 - **Paper:** Paper 14 — redesigned title: **"Trustworthy Agricultural
   Intelligence Under Data Sparsity: An Empirical Study of Evidence
   Availability, Uncertainty, and Reliability"** (previously "Trustworthy
@@ -491,12 +493,33 @@ architecture, continual learning, sophisticated human studies, every
 satellite modality — building all of that would make the experiment
 impossible to interpret.
 
-**Scope**:
-- **4 countries** — 2 relatively data-rich, 2 relatively data-sparse
-  (candidates, pending final selection: rich = Kenya, Rwanda; sparse =
-  Uganda, South Sudan — chosen from the concluded experiment's own
-  confirmed FAOSTAT coverage split, not re-derived from scratch).
-- **3 commodities** — coffee, maize, tea.
+**Scope, finalized 2026-09-17** (was "candidates, pending selection" —
+now locked in against a fresh live check, not just the concluded
+experiment's older numbers):
+- **4 countries** — **Kenya, Rwanda** (data-rich) and **South Sudan,
+  Somalia** (data-sparse). Confirmed live via `get_daily_price()` for
+  all 3 commodities below: KE and RW return `price_source: "faostat"`
+  (real) for coffee/maize/tea without exception; SS and SO return
+  `price_source: "baseline"` (synthetic) for all three, also without
+  exception — a clean, fully-matched split, not a partial one.
+  Deliberately chose SS/SO over the blueprint's earlier UG/SS
+  placeholder: SS and SO are the two data-sparse countries this lab has
+  *independently* confirmed zero real coverage on a second,
+  structurally different data system (UN Comtrade trade flows, not just
+  FAOSTAT prices — see the concluded experiment's Phase 1) — the
+  strongest, most defensible "genuinely data-sparse" pair available,
+  rather than Uganda, which has real secondary infrastructure (UBOS/URA
+  crawlers, real weather, real user/pulse activity) that would muddy a
+  clean data-availability contrast even though its FAOSTAT price
+  coverage is also zero. Kenya (highest real FAOSTAT row count, 1,284)
+  and Rwanda (824 rows, and already has real production infrastructure
+  from this session's price-source-mismatch fix — migration 048's
+  `predicted_price_source` tracking was live-verified specifically
+  against RW coffee/tea) are the two data-rich picks.
+- **3 commodities** — coffee, maize, tea (confirmed real FAOSTAT
+  coverage for both KE and RW, live-verified alongside the country
+  selection above — not assumed from the concluded experiment's older
+  numbers).
 - **1 primary forecasting task** — 30-day agricultural price forecasting.
 - **4–5 evidence modalities** — price, weather, trade, production,
   textual events/news.
@@ -578,6 +601,65 @@ if it confirms the hypothesis.
 
 ## Results
 
-*Not started. Phase 0 (gold-standard dataset + provenance layer) is the
-first concrete build task, not yet begun as of 2026-09-17 — this file
-is the design specification that work will be built against.*
+### Phase 0, first slice — 2026-09-17: schema + real price-modality collection
+
+Built and ran the first real piece of Phase 0, scoped deliberately
+narrow: the price modality only (weather/trade/production/textual-event
+modalities are separate, not-yet-built collection scripts — price went
+first because `get_daily_price()`'s real/synthetic distinction is
+already fully audited and trustworthy from this session's own price-
+source-mismatch investigation, giving Phase 0 a solid foundation rather
+than guessing at provenance for an unaudited modality).
+
+**Built**: `scripts/provenance.py` — the real schema (`DataState` enum:
+`OBSERVED_VERIFIED` / `OBSERVED_UNVERIFIED` / `SYNTHETIC_BASELINE` /
+`SYNTHETIC_IMPUTED` / `UNKNOWN`, with `is_valid_ground_truth` true only
+for `OBSERVED_VERIFIED` — the one rule that matters most, enforced in
+code rather than just documented); `EvidenceQualityVector` (the 7-
+dimension `E = (A,Q,R,F,C,P,G)` construct, each dimension `float | None`
+— left `None` rather than fabricated where this slice has no real basis
+to compute it yet); `GoldStandardObservation`, the actual per-row
+schema. `scripts/collect_gold_standard.py` — real, read-only collection
+against `services/market/price_model.get_daily_price()` for the
+finalized scope, writing a local JSON file under `data/` (never a
+production table, per the thesis-lab sandbox rule).
+
+**Run live, 2026-09-17**: 12 real observations (4 countries × 3
+commodities) —
+
+```
+observed_verified:  6   (KE coffee/maize/tea, RW coffee/maize/tea — all price_source="faostat")
+synthetic_baseline: 6   (SS coffee/maize/tea, SO coffee/maize/tea — all price_source="baseline")
+```
+
+A clean, fully-matched split with zero exceptions — confirms the
+finalized 4-country scope (see Success Metrics/Scope above) is correctly
+chosen: the rich/sparse contrast is real and total for this modality,
+not partial. Sample row (KE coffee):
+
+```json
+{
+  "country_code": "KE", "commodity": "coffee", "market": "national",
+  "geography_level": "NATIONAL", "observation_date": "2026-09-17",
+  "value": 4807.3, "unit": "USD/tonne",
+  "price_basis": "producer_price_faostat_usd_tonne",
+  "source": "faostat", "data_state": "observed_verified"
+}
+```
+
+**Verified**: `ruff check` clean. Output inspected directly (not just
+"it ran without error") — field values, `price_basis` strings, and
+`data_state` classification all confirmed correct against the same live
+`get_daily_price()` check used to finalize country/commodity selection
+above.
+
+**What Phase 0 still needs, honestly not yet done**: weather, trade,
+production, and textual-event collection scripts (the other 4–5
+evidence modalities); the `EvidenceQualityVector`'s 7 dimensions remain
+entirely unpopulated (`None`) until a second modality exists to compute
+`compatibility`/`geographic_coverage`/etc. against; no historical
+time-series collection yet (today's snapshot only — Experiment A/B's
+tiered/sparsity comparisons need a real multi-date sample, not one
+day); the numeric success criteria for H1–H5 (flagged in Success
+Metrics as needing to be pinned down once real data exists) are still
+undecided.
