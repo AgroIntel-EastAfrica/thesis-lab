@@ -1059,21 +1059,21 @@ MAE/RMSE/MAPE/coverage/ContinuousLearning feed, with the exclusion
 count surfaced rather than silently dropped; a missing
 `predicted_price_source` (legacy rows) is "unknown," never
 "mismatched." All 36 existing tests pass unchanged; `ruff`/`mypy`
-confirmed zero new findings via `git stash` comparison. **The
-migration itself is not yet applied to production** — correctly
-blocked by this session's own auto-mode classifier as a
-production-deploy action (schema changes need the project owner's
-explicit go-ahead, and neither of `migrate.sh`'s automated paths
-currently works for this project — see that script's own header).
-Full detail in `product/PRODUCTION_AUDIT.md`'s 2026-09-17 entry.
+confirmed zero new findings via `git stash` comparison.
+
+**Migration 048 applied to production, 2026-09-17** — the project
+owner ran it directly (schema changes to live Supabase are correctly
+gated behind explicit human approval, separate from a code push).
+Verified live rather than trusting the report: queried
+`forecast_evaluations` directly and confirmed all three columns exist,
+correctly returning `None` on pre-migration rows (the intended
+"unknown, not mismatched" path for legacy data). The fix is now fully
+live end-to-end — the next real `update_price_forecasts`/
+`evaluate_forecast_accuracy` run will populate and check it. Full
+detail in `product/PRODUCTION_AUDIT.md`'s 2026-09-17 entries.
 
 **Reopen criteria**:
-1. Apply migration 048 to production (`./scripts/migrate.sh 048`, or
-   paste it into the Supabase SQL editor) — the fix above is inert
-   until this runs; `evaluate_forecast_accuracy` reads/writes the new
-   columns unconditionally, so a pre-migration Supabase would 400 on
-   them (not yet reproduced live — no evaluation has run against the
-   unmigrated schema since this code shipped).
+1. ~~Apply migration 048 to production~~ — **done, 2026-09-17.**
 2. Defensively add the `Element Code == _PP_ELEMENT` check to
    `services/market/faostat_prices.py`'s parsing loop anyway (lines
    ~200-209) — confirmed unnecessary for this specific incident, but
