@@ -971,45 +971,99 @@ Root-caused as far as possible without live credentials:
      numerically smaller element (e.g. an index rather than a raw
      price) despite the filter, this code would cache it as if it were
      the real USD/tonne price with no way to detect the mismatch.
-- **Genuinely blocked**: `FAOSTAT_USERNAME`/`FAOSTAT_PASSWORD` are not
-  present anywhere in the current `.env` (confirmed via `grep`), and
-  attempting the real `_login()` flow directly failed with `415
-  Unsupported Media Type` even before credentials would have mattered —
-  worth a second look independent of the credentials gap, since the
-  same request shape apparently succeeded whenever these cached entries
-  were originally synced. Without a working login, the raw per-row JSON
-  (which would show the true `Element Code`, `Unit`, and `Value` FAOSTAT
-  actually returned) cannot be re-fetched to settle which of the two
-  possibilities above is correct.
+**Resolved, 2026-09-17, with real FAOSTAT credentials.** The project
+owner registered a real FAOSTAT account (`FAOSTAT_USERNAME`/
+`FAOSTAT_PASSWORD`, added to `.env`) specifically to settle this.
+Re-authenticating surfaced a genuine, separate code bug first:
+`_login()` sent its request as `json={...}`, but FAOSTAT's
+`/auth/login` now rejects a JSON body with a bare `415` *at the
+CloudFront edge* (empty body, before even reaching FAOSTAT's origin
+server) — confirmed live that the exact same credentials succeed with
+`data={...}` (form-encoded) instead. This had been silently broken for
+an unknown period; `sync_faostat_prices` degrades gracefully to
+`BASE_PRICES_USD` on any failure, so nothing ever surfaced it, which is
+almost certainly why the cached RW/BI entries were stuck at old,
+never-refreshed single years (2015/2019). **Fixed**:
+`services/market/faostat_prices.py`'s `_login()` now sends a
+form-encoded body — this is a real production bug fix, not a
+thesis-lab-only change, filed separately from this audit's own
+read-only boundary (see Change Log entry below).
 
-**Why this matters for the paper, beyond fixing one number**: this is a
-live, concrete instance of the exact risk Section 6 of the concept paper
-warns about — an unverified provenance/data-quality defect silently
-contaminating a "real" (`faostat`-sourced) measurement in a way that,
-if left unexamined, would have *reversed* this experiment's own headline
-finding (data-rich countries showing worse service quality than
-data-sparse ones, for 2 of 8 countries, driven by 2 of 12 commodities on
-1 of 2 evaluated dates). It is also the second real provenance incident
-this experiment has found and traced to completion (after the Selina
-Wamucii copyright-year bug) — reinforcing that "real data source" is not
-a synonym for "correct data" and that an audit which only reads the
-`price_source` label without checking the number against a plausibility
-prior would have missed both.
+With login working, fetched the raw PP rows directly for RW/BI
+coffee/tea (item 656/667) and checked every row's `Element Code`
+**independently ruling out possibility 2 above**: every single
+returned row correctly carries `Element Code: "5532"` / `Element:
+"Producer Price (USD/tonne)"` — the API's `element` filter is not
+leaking wrong-element rows. The parsing code's blind trust in that
+filter turned out to be harmless in this instance (still worth fixing
+defensively per the reopen note below, but it is not the cause here).
 
-**Not fixed, deliberately** — matches the thesis-lab read-only
-boundary for this experiment (this session's investigation used only
-read calls: cache reads, live `get_daily_price()` calls, and one failed,
-credential-less external auth attempt; no writes were made to
-production Supabase or Redis). Two concrete next steps, both blocked on
-external input:
-1. Obtain valid `FAOSTAT_USERNAME`/`FAOSTAT_PASSWORD` (or a direct
-   `FAOSTAT_TOKEN`) to re-fetch the raw PP rows for RW coffee/tea (item
-   656/667, year 2015) and BI coffee/tea (year 2019) and inspect the
-   actual `Element Code` FAOSTAT returned per row — this alone would
-   settle whether this is a source-data anomaly or a parsing gap.
-2. If it turns out to be the parsing gap (possibility 2 above): add an
-   explicit `Element Code == _PP_ELEMENT` check inside the `by_item`
-   selection loop in `services/market/faostat_prices.py`, rejecting any
-   row whose element doesn't match rather than trusting the query
-   filter alone — a small, well-scoped real fix, not attempted here
-   since it's unverified which of the two causes is real.
+**The real cause is possibility 1, but not "an error" — a genuine
+basis mismatch between two different, both-real, ways of pricing the
+same commodity.** FAOSTAT's raw historical series is internally
+consistent, not corrupted: BI coffee shows a real, large structural
+break in its own trajectory — \$1,700-3,300/tonne every year from 1991
+through 2006, then \$185-436/tonne every year from 2007 through 2019
+(most recently \$270.9 in 2019) — a ~90% level shift that persists for
+13 straight years, not a single bad data point. RW coffee's single 2015
+value (\$277.4) sits in the same low range after a data gap (no rows
+2011-2014) following \$1,371.9 in 2010. Checked `price_model.py`'s
+`BASE_PRICES_USD` against this: `coffee: {"RW": 2800, "BI": 2600}` —
+matching the forecasts' *predicted* values (\$2,680-3,051) almost
+exactly, and sitting in the same range as international green-coffee
+export-benchmark prices, not domestic farm-gate prices. The most
+plausible real-world explanation (Burundi's coffee sector was under
+strict state marketing-board control for decades, historically holding
+producer prices well below export value — a documented feature of that
+market, not spin): `BASE_PRICES_USD`'s synthetic anchor was calibrated
+to something like international export-benchmark pricing, while
+FAOSTAT's PP element is specifically *farm-gate producer* price — two
+different, legitimate points in the same value chain, off by an order
+of magnitude for a landlocked, historically state-controlled coffee
+market. Neither source is "wrong" for what it measures; they are not
+directly comparable.
+
+**Why this matters for the paper, and it's a better finding than a
+data-quality bug**: `evaluate_forecast_accuracy` (`apps/workers/
+forecasting.py`) has no concept of *which basis* a price came from —
+it stores `predicted_price` (generated under whatever `price_source`
+was active at forecast time) and later fills `actual_price` (from
+whatever `price_source` is active at evaluation time) and diffs them
+directly. When the priority chain silently switches basis mid-window
+for the same country/commodity — exactly what happened here between
+the 2026-09-13 forecast (synthetic anchor) and the 2026-09-15
+evaluation (FAOSTAT anchor) — the resulting "forecast error" is a
+methodological artifact of an undetected source switch, not a
+measurement of forecast skill, and it can be large enough (881-1186%
+MAPE here) to flip a headline equity finding for the exact 2
+countries/commodities affected. This is a sharper, more general
+instance of Section 6's transparency concern than "a value was wrong":
+a pipeline that composites multiple real sources with different
+implicit definitions needs to detect and flag a basis change, not just
+a missing-data fallback — provenance-as-a-source-label
+(`price_source: "faostat"`) is not sufficient; provenance-as-a-basis
+(what does this number actually measure) is the harder, real gap.
+
+**Not yet fixed** (a decision point, not an oversight): the
+`_login()` bug above is fixed since it's an unambiguous, low-risk
+correctness bug with no design judgment involved. The basis-mismatch
+finding is different — it's a real production correctness gap in
+`evaluate_forecast_accuracy`/`forecast_evaluations`, not a thesis-lab
+change, and fixing it well requires a design decision (e.g., recording
+`price_source` alongside both `predicted_price` and `actual_price`,
+then excluding or flagging evaluation rows where the two differ) that
+deserves the project owner's input before being built, rather than a
+unilateral schema/behavior change to a live worker task.
+
+**Reopen criteria**:
+1. Decide and build the `price_source`-consistency fix in
+   `evaluate_forecast_accuracy` described above — the actual production
+   fix this finding points to.
+2. Defensively add the `Element Code == _PP_ELEMENT` check to
+   `services/market/faostat_prices.py`'s parsing loop anyway (lines
+   ~200-209) — confirmed unnecessary for this specific incident, but
+   still a real gap: nothing currently stops a future FAOSTAT API
+   response from leaking a wrong-element row undetected.
+3. Re-run `sync_faostat_prices` for all 8 countries now that `_login()`
+   is fixed, to get current-year data instead of the stale 2015/2019
+   single-year anchors this whole investigation was triggered by.
