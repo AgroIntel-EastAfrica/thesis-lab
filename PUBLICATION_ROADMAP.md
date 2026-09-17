@@ -36,7 +36,7 @@ publications. See "Research thrusts" below.
 | 11 | Agentic market monitoring (NEW) | Empirical | [`agentic-market-monitoring`](active_tests/agentic-market-monitoring/experiment_blueprint.md) | | | Not started — evaluates already-shipped production monitoring loop |
 | 12 | Continual learning | Empirical | [`continual-learning-drift-audit`](active_tests/continual-learning-drift-audit/experiment_blueprint.md) | | | Active |
 | 13 | Human-AI decision support | Empirical | [`human-ai-collaboration-study-design`](active_tests/human-ai-collaboration-study-design/experiment_blueprint.md), [`robustness-under-missing-data`](active_tests/robustness-under-missing-data/experiment_blueprint.md) | | | Active |
-| 14 | Trustworthy AI under unequal data availability (promoted) | Empirical | [`regional-equity-audit`](active_tests/regional-equity-audit/experiment_blueprint.md) | | | Active |
+| 14 | Trustworthy Agricultural Intelligence Under Data Sparsity: An Empirical Study of Evidence Availability, Uncertainty, and Reliability (redesigned 2026-09-17, see below) | Empirical | [`evidence-sparsity-reliability`](active_tests/evidence-sparsity-reliability/experiment_blueprint.md) (predecessor [`regional-equity-audit`](concluded/regional-equity-audit/experiment_blueprint.md), concluded) | | | Active — design documented, Phase 0 (gold-standard dataset + provenance layer) not yet started |
 | 15 | AgriBench-EA benchmark | Dataset/resource | [`agribench-ea-benchmark`](active_tests/agribench-ea-benchmark/experiment_blueprint.md) | | | Not started — blocked on licensing review |
 | 16 | Evaluation framework | Synthesis/methodology | [`agentic-evaluation-framework`](active_tests/agentic-evaluation-framework/experiment_blueprint.md) | | | Not started — depends on Papers 2-14 results |
 
@@ -71,6 +71,40 @@ item-by-item against the 12 papers already above:
 - **Kept, not replaced:** Paper 1 (framework) and Paper 16 (evaluation
   framework) — the second proposal's 15-paper list dropped both entirely,
   but nothing in it replaces the synthesis role either plays here.
+
+## Paper 14 redesign, 2026-09-17 — and an open coordination question
+
+Paper 14's original design (`regional-equity-audit`) audited AgroIntel
+by comparing data-rich vs. data-sparse *countries* directly, and mixed
+data-availability, production bugs, forecasting validity, calibration,
+and recommendation behavior into one experiment — real findings came
+out of it (3 production bugs, a genuine 21.1% coverage split), but the
+country-vs-country framing made causal interpretation difficult, as its
+own confound-chasing repeatedly demonstrated. Reset into a controlled
+experiment with evidence availability/quality/provenance/semantic
+consistency as explicit factors instead of country identity — full
+design in
+[`active_tests/evidence-sparsity-reliability/experiment_blueprint.md`](active_tests/evidence-sparsity-reliability/experiment_blueprint.md),
+concluded predecessor at
+[`concluded/regional-equity-audit/experiment_blueprint.md`](concluded/regional-equity-audit/experiment_blueprint.md).
+
+**Open question this reset surfaces, not yet resolved**: the redesigned
+Paper 14 substantially overlaps by construction with Papers 5
+(probabilistic calibration), 6 (data-centric AI for low-resource
+markets), 8 (evidence retrieval/attribution), 9 (evidence acquisition
+policy), 10 (reasoning over conflicting evidence), and 13 (human-AI
+decision support) — its four sub-experiments (E1–E4) are essentially
+smaller, bounded pilots of exactly what those six papers each go deeper
+on. Two readings are both consistent with the redesign as given: Paper
+14 stays a small, explicitly-bounded pilot that later *feeds into* those
+six as their own separate deeper treatments; or some of them get
+formally absorbed into Paper 14 once its infrastructure exists and their
+separate scope turns out to be redundant. This table has **not** been
+changed to reflect either resolution — that's the project owner's call,
+not an inference to make unilaterally. Revisit once Phase 0 of the new
+Paper 14 experiment (the gold-standard dataset + provenance layer) is
+built and the real infrastructure overlap becomes concrete rather than
+theoretical.
 
 ## Research thrusts
 

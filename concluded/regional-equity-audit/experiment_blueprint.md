@@ -2,7 +2,10 @@
 
 - **Owner:**
 - **Started:**
-- **Status:** active
+- **Status:** concluded, 2026-09-17 — reset into
+  [`evidence-sparsity-reliability`](../../active_tests/evidence-sparsity-reliability/experiment_blueprint.md)
+  (see the Concluding Note at the end of this file for why, and how this
+  experiment's real findings carry forward rather than being discarded).
 - **Paper:** Paper 14 — "Trustworthy Agricultural Intelligence Under
   Unequal Data Availability" (promoted 2026-09-12 from a sub-topic of
   Paper 13/Human-AI Decision Support into its own dedicated paper — same
@@ -1118,3 +1121,60 @@ detail in `product/PRODUCTION_AUDIT.md`'s 2026-09-17 entries.
   had a full forecast-to-evaluation cycle to prove itself on yet. That
   will change automatically as new batches like the RW/BI one above get
   evaluated on their target dates.
+
+## Concluding Note, 2026-09-17: reset into a controlled experiment
+
+This experiment is concluded, not abandoned. Its own real value — three
+production bugs found and fixed, a genuine 21.1% data-availability split
+quantified, a real basis-mismatch mechanism traced and fixed — stands as
+recorded above. But a review of the experimental design (external
+input, recorded verbatim in
+`thesis-lab/active_tests/evidence-sparsity-reliability/experiment_blueprint.md`'s
+own header) identified a real methodological weakness: this experiment
+mixed data-availability, production-system bugs, forecasting validity,
+recommendation behavior, and calibration into one ad-hoc audit, which
+makes causal interpretation difficult — you can't cleanly attribute an
+observed effect to "less data" when the comparison groups (data-rich vs.
+data-sparse countries) differ in a dozen uncontrolled ways at once, as
+this experiment's own MAPE-reversal and basis-mismatch findings ended up
+demonstrating in practice.
+
+**Decision**: rather than keep patching one audit, reset Paper 14 as a
+controlled scientific experiment — same platform (AgroIntel), a
+narrower and more defensible research question, explicit experimental
+factors (evidence availability, quality, provenance, semantic
+consistency) instead of "which country," and a verified gold-standard
+evaluation set that makes the exact MAPE-mixing mistake this experiment
+made structurally impossible to repeat. Full design in the new
+experiment's blueprint.
+
+**What carries forward, not discarded**:
+- The 5 real bugs found here become the seed of the new experiment's
+  failure-mode taxonomy (F1–F5) — see that blueprint's own section on
+  this. Nothing here was wasted; it's the empirical basis for scoping
+  what "evidence failure" concretely means for this platform, rather
+  than a theoretical list.
+- The real, quantified 21.1% FAOSTAT coverage split and the confirmed
+  structural (not credential) absence of UG/SS/SO/CD price/trade data
+  remain true facts about this platform and inform the new experiment's
+  country selection (2 data-rich, 2 data-sparse, per its own scope).
+- The price-source-mismatch fix (migration 048, `apps/workers/
+  forecasting.py`) is real, shipped, production infrastructure — it
+  directly implements the "don't let synthetic data masquerade as
+  observed ground truth" principle the new experiment makes a first-
+  class rule (its OBSERVED/SYNTHETIC/UNKNOWN provenance states).
+- `thesis-lab/active_tests/regional-equity-audit/scripts/` (`run_audit.py`,
+  `audit_by_commodity.py`, `audit_geography_levels.py`) remain real,
+  working, read-only query tools against production — reusable as a
+  starting point for the new experiment's own data-collection scripts,
+  not rewritten from scratch.
+
+**What does not carry forward as-is**: the country-vs-country comparison
+framing itself (Kenya vs. Uganda) — the new experiment explicitly avoids
+this in favor of comparing the same forecasting problem under
+controlled evidence conditions, for the exact reason this experiment's
+own confound-chasing kept surfacing.
+
+The two published reports (`findings_report.html`, `grant_findings_brief.html`)
+stand as the honest historical record of this concluded experiment and
+are not being rewritten to pretend the reset was the plan all along.
