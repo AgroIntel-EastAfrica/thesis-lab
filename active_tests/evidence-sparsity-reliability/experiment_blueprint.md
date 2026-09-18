@@ -859,17 +859,59 @@ false zero. Output: `data/gold_standard_trade_20260917_220008.json`
 (superseding, not deleting, the first blocked run's file — both are
 honest records of the same real constraint).
 
-**What Phase 0 still needs, honestly not yet done**: the trade
-modality's real per-commodity data (still blocked on the UN Comtrade
-quota, next earliest retry ~2026-09-18 03:00 UTC); the textual/news-event modality
-(1 of the planned 4–5 modalities remains unbuilt); the
-`EvidenceQualityVector`'s 7 dimensions are *now technically computable*
-(four modalities exist to compare against each other, once trade's
-real per-commodity data lands) but still entirely unpopulated (`None`)
-— deliberately deferred rather than attempted this pass, to keep each
-increment reviewable rather than compounding scope; no historical
-time-series collection yet (single-snapshot data for all four
-modalities so far — Experiment A/B's tiered/sparsity comparisons need a
-real multi-date sample, not one day); the numeric success criteria for
-H1–H5 (flagged in Success Metrics as needing to be pinned down once
-real data exists) are still undecided.
+### Phase 0, fifth slice — 2026-09-18: trade modality unblocked, and a
+fourth real evidence-availability pattern that extends the concluded
+experiment's own earlier finding
+
+**What actually happened live**: re-ran `collect_trade.py` at
+2026-09-18 10:14 UTC, well past the ~03:00 UTC quota reset — this time
+it worked. Real, non-zero trade data for **Kenya only**: coffee
+$518,720,901, maize $9,984,905, tea $2,691,966,006 (all
+`observed_verified`, confirmed by inspecting the real per-partner rows
+behind the sums). **Rwanda, South Sudan and Somalia all returned a
+genuine, confirmed `200 OK` with zero rows** for all three commodities
+— verified directly with a standalone manual call (not just trusting
+the collector): `get_trade_flows(reporter="RW", commodity_code="0901",
+flow="exports", year=2023)` logged `request_success ... status=200`
+immediately followed by `trade_flows_retrieved ... count=0` — a real
+API success carrying no data, not a rate limit, timeout, or bug. Reran
+the full collector a second time immediately after (no `403`s, only
+soft per-second `rate_limited` retries that all recovered) and got
+byte-identical results — ruling out one-off flakiness.
+
+**A fourth real evidence-availability pattern, and it doesn't match
+any of the first three**: this is neither the price modality's split
+(KE+RW rich, SS+SO sparse) nor weather's uniform-everywhere, nor
+production's uniform-but-commodity-dependent. Trade is **KE only**,
+with Rwanda now landing on the sparse side despite being one of this
+experiment's two "data-rich" tier countries. This directly *extends*
+the concluded `regional-equity-audit` experiment's own earlier,
+narrower finding — that South Sudan and Somalia were zero for UN
+Comtrade's `TOTAL` commodity aggregate — in two ways: (1) confirming
+that zero holds per-commodity (coffee/maize/tea individually, not just
+the aggregate) for SS/SO, and (2) showing it is *not* a data-rich vs.
+data-sparse story at all here, since Rwanda (data-rich in this
+experiment's price-modality tiering) is equally zero. Four modalities
+now on record, four genuinely different shapes of "sparse" — the
+strongest evidence yet for this experiment's core premise that
+evidence availability is a property of the (modality, commodity,
+country) triple, not reducible to any single dimension, not even
+"country data-richness" as a general trait.
+
+**Verified**: two independent live runs, byte-identical; the RW-zero
+result cross-checked with a standalone direct client call outside the
+collector script, confirmed as a real `200`/zero-rows response, not an
+error being swallowed. `ruff check` clean.
+
+**What Phase 0 still needs, honestly not yet done**: the textual/news-
+event modality (the last of the planned 4–5 modalities, not yet
+started); the `EvidenceQualityVector`'s 7 dimensions are *now
+technically computable* (four real modalities exist to compare against
+each other) but still entirely unpopulated (`None`) — deliberately
+deferred rather than attempted this pass, to keep each increment
+reviewable rather than compounding scope; no historical time-series
+collection yet (single-snapshot data for all four modalities so far —
+Experiment A/B's tiered/sparsity comparisons need a real multi-date
+sample, not one day); the numeric success criteria for H1–H5 (flagged
+in Success Metrics as needing to be pinned down once real data exists)
+are still undecided.
