@@ -999,3 +999,102 @@ layer is now substantially built; the next real step is either a
 second collection pass per modality (to start building the
 time-series Experiments A/B actually need) or beginning to populate
 the `EvidenceQualityVector` from what already exists.
+
+### Phase 0, seventh slice — 2026-09-18: a first Evidence Quality Vector,
+scored from real facts this session already established
+
+**Built**: `scripts/evidence_quality_rubric.py` (the scoring rubric,
+fully inline-documented with the real fact each number is grounded
+in — never a guess dressed up as precision) and
+`scripts/populate_evidence_quality.py` (applies it to the latest real
+collection per modality and writes one consolidated, scored dataset).
+Pure local computation over already-collected data — no network calls
+to verify.
+
+**The rubric, by dimension**: **A** (availability) is mechanical, read
+straight off `DataState` — the one dimension needing no judgment call,
+since it already *is* this experiment's core instrument. **F**
+(freshness) is also mechanical: the real gap between `observation_date`
+and `collected_at`, decayed over a 10-year horizon (chosen because this
+session's most stale real data — trade's fixed 2023 reference year,
+production's FAOSTAT reporting lag — is years, not decades, old). The
+other five (**Q**, **R**, **C**, **P**, **G**) are modality-level and
+each is justified against a specific real fact from this session, not
+a general impression of the source: **Q** (quality) from each source's
+*actual observed reliability this session* — FAOSTAT/NASA POWER/UN
+Comtrade all failed cleanly (a `403`, a `200`/zero-rows) when they
+failed at all, versus GDELT's real, repeatedly-confirmed ~2-of-12
+success rate across three independent live runs. **G** (geographic
+coverage) is grounded the same way: weather's score is capped not
+because NASA POWER is a weak source (it scores highest on every other
+dimension) but because `collect_weather.py` reads one point — the
+capital city's coordinates — as a stand-in for the whole country, a
+real, named structural limitation, not a hypothetical one; text's G is
+capped because `news_intelligence.py` tags a country via keyword
+matching in article text, not confirmed geolocation.
+
+**What actually happened, run against all 56 real observations
+collected across Phase 0 so far**:
+
+| Modality | A | Q | R | F | C | P | G |
+|---|---|---|---|---|---|---|---|
+| price | 0.58 | 0.90 | 1.00 | 1.00 | 0.90 | 0.90 | 0.85 |
+| production | 0.67 | 0.90 | 0.90 | 0.89 | 0.85 | 0.90 | 0.85 |
+| text | 0.17 | 0.35 | 0.50 | 1.00 | 0.30 | 0.40 | 0.55 |
+| trade | 0.25 | 0.75 | 0.85 | 0.73 | 0.50 | 0.90 | 0.90 |
+| weather | 1.00 | 0.95 | 0.60 | 1.00 | 0.90 | 0.95 | 0.50 |
+
+Hand-verified several cells directly against the raw data before
+trusting the table: price's A=0.58 matches its real 6/6
+observed-verified/synthetic-baseline split exactly
+((6×1.0+6×0.15)/12); text's A=0.17 matches its real 2/12 success rate;
+weather's A=1.00 matches all 8 observations being
+`observed_verified`.
+
+**What the table makes visible that no single modality's own writeup
+did on its own**: no modality wins on every dimension, and the
+dimensions genuinely trade off against each other rather than moving
+together. Weather has the best source (Q=0.95, P=0.95) but the worst
+geographic fidelity (G=0.50) — an excellent measurement of the wrong
+place. Text has the worst everything except freshness (F=1.00, since
+every failed GDELT call this session still recorded today's date
+honestly) — fresh but nearly everything else about it is weak. Trade
+has strong provenance and geography (P=0.90, G=0.90 — a real national
+customs authority reporting on its own country) but the weakest
+compatibility (C=0.50, a raw USD total conflating price and volume)
+and middling availability (A=0.25, this session's real quota/rate-limit
+friction). This is the concrete version of the blueprint's own
+"1,000,000 observations / wrong geography or wrong price basis / LOTS
+OF DATA -> LOW EVIDENTIAL VALUE" diagram — evidence quality is
+multi-dimensional in a way a single availability number (or a single
+"data quality" score) genuinely cannot capture, now demonstrated with
+real numbers instead of asserted in the abstract.
+
+**Honest limits of this slice**: every number here is a **Phase 0
+estimate** — a principled, inspectable, individually-justified first
+pass, not a validated or learned measurement. The modality-level scores
+in particular (Q/R/C/P/G) are the same five numbers applied to every
+observation within a modality regardless of country or commodity —
+real per-observation variation (e.g. is KE's FAOSTAT price series
+better-attested than SO's near-total absence of one) isn't yet
+captured, since the underlying `DataState`-per-row split already
+carries most of that signal through `A`. Revising individual numbers
+in the rubric, or making Q/R/C/P/G vary within a modality rather than
+only across modalities, is real future work, not a gap being hidden.
+
+**Verified**: `ruff check` clean on both new files. Output:
+`data/gold_standard_all_with_quality_20260918_135956.json` (56 scored
+observations, all 5 modalities' latest real collections).
+
+**Phase 0 status**: data-collection layer built (5/5 modalities, at
+least one real live attempt each) and a first, real,
+individually-justified `EvidenceQualityVector` now computed for every
+observation collected so far — the last item on Phase 0's own original
+scope list. **What's still genuinely open**: no historical time-series
+yet (every modality is still a single snapshot — needed for
+Experiments A/B's tiered/sparsity comparisons); the numeric success
+criteria for H1–H5 remain undecided; the rubric above is a first pass,
+not a validated instrument. The reasonable next step is either a
+second collection pass (to start real time-series data) or moving into
+Experiment E1 (forecasting under controlled data availability) using
+what Phase 0 has already built.
