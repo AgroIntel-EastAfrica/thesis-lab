@@ -915,3 +915,87 @@ Experiment A/B's tiered/sparsity comparisons need a real multi-date
 sample, not one day); the numeric success criteria for H1–H5 (flagged
 in Success Metrics as needing to be pinned down once real data exists)
 are still undecided.
+
+### Phase 0, sixth slice — 2026-09-18: text/news modality, the last of
+the planned 4–5 — and a genuinely different kind of finding: source
+*reliability*, not source *availability*
+
+**Built**: `scripts/collect_text.py`, against
+`services/intelligence/news_intelligence.py`'s
+`NewsIntelligenceService.fetch_and_analyze()` (real GDELT + ReliefWeb +
+EAC media RSS, no API key required). Unlike the other four modalities,
+"evidence" here isn't a price or a count of production years — it's
+*coverage*: how many real, classified market signals exist for a given
+(country, commodity) this week. `signals_extracted` is the recorded
+`value`; the pre-classification `articles_analyzed` count is kept in
+`price_basis` for transparency.
+
+**What actually happened live, and why it isn't being reported as a
+clean 4×3 result**: three independent live runs (two fully concurrent
+via `asyncio.gather`, one after switching to sequential calls with a
+1.1s gap once a concurrency-collision hypothesis was formed) all
+landed at roughly the same **~2 of 12 pairs succeeding**, the rest
+timing out against GDELT specifically (`Connection timeout to host
+api.gdeltproject.org`, 3 retries exhausted) with `ReliefWeb`/`RSS`
+contributing nothing further. The initial hypothesis — that
+`NewsIntelligenceService` opens a fresh `GDELTClient` per call, so its
+own `rate_limit_per_second=1.0` never throttles *across* the 12
+concurrent calls this collector was making — was real and worth fixing
+(the collector now runs sequentially, the responsible way to treat a
+free, unauthenticated, rate-limited API), but it was not sufficient:
+the sequential run still only landed 2 of 12. That rules out
+self-inflicted concurrency as the *sole* cause and points to a
+currently-degraded, GDELT-specific reachability issue from this
+environment right now — consistent with the broader pattern of
+transient external-network flakiness observed elsewhere this same
+session (PostHog API timeouts, GitHub CLI TLS handshake failures,
+`git push` RPC failures to a completely different host).
+
+**Why this is being kept and reported as a real finding rather than
+retried into a clean number**: forcing a clean 4×3 result by retrying
+until it looked tidy would be exactly the kind of quiet
+success-shaping this experiment's own gold-standard schema exists to
+prevent. Instead: this modality's actual, live-observed behavior is
+that its primary free-tier source (GDELT) has a materially higher
+*operational* failure rate than FAOSTAT, NASA POWER, or UN Comtrade —
+all of which, across this Phase 0's price/weather/production/trade
+collection, failed cleanly (a `403`, a `200`/zero-rows) rather than
+silently timing out on 5 of 6 attempts. That is itself a genuine
+evidence-*quality* finding, not an evidence-*availability* one: a
+source can exist and still be unreliable enough that an agentic system
+polling it in real time would need to treat it very differently from
+this experiment's other four modalities (retries, timeouts, and
+explicit reliability scoring — directly the concern the blueprint's
+`EvidenceQualityVector.provenance`/`quality` dimensions exist to
+capture, not yet populated but now with a concrete real example
+motivating why). Recorded honestly with `DataState.UNKNOWN` for the
+timed-out pairs (not a false zero) and `OBSERVED_VERIFIED` only for
+the pairs that genuinely returned data.
+
+**Verified**: `ruff check` clean on `collect_text.py`. The concurrency
+fix was verified as real and correct (sequential pacing is
+unambiguously the responsible way to call this API regardless of
+whether it fully explained the failure rate) even though it did not
+fully resolve the reliability issue. Two of the three live run outputs
+kept as data (`gold_standard_text_20260918_103057.json`, the first
+concurrent baseline; `gold_standard_text_20260918_110514.json`, the
+sequential-fix attempt) — the third, near-duplicate concurrent run
+removed as redundant.
+
+**Phase 0 status**: all 4–5 planned evidence modalities now have at
+least one real, live collection attempt (price, weather, production,
+trade all cleanly collected; text collected but reliability-limited).
+**What Phase 0 still needs, honestly not yet done**: a reliable
+text-modality collection (retry once GDELT's reachability from this
+environment recovers — no announced reset time to wait for, unlike UN
+Comtrade's quota, so this is an open-ended reopen item rather than a
+scheduled one); the `EvidenceQualityVector`'s 7 dimensions, now with
+five real modalities' worth of raw material to compute them from but
+still entirely unpopulated (`None`) — deliberately deferred to keep
+each increment reviewable; no historical time-series collection yet
+(every modality so far is a single snapshot); the numeric success
+criteria for H1–H5 are still undecided. Phase 0's data-collection
+layer is now substantially built; the next real step is either a
+second collection pass per modality (to start building the
+time-series Experiments A/B actually need) or beginning to populate
+the `EvidenceQualityVector` from what already exists.
