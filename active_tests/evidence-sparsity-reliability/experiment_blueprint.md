@@ -1098,3 +1098,76 @@ not a validated instrument. The reasonable next step is either a
 second collection pass (to start real time-series data) or moving into
 Experiment E1 (forecasting under controlled data availability) using
 what Phase 0 has already built.
+
+### Phase 0, eighth slice — 2026-09-19: the first real time series —
+a genuine prerequisite for E1, not just an enhancement
+
+**Why this had to happen before E1, not alongside it**: E1 needs
+historical observations to fit or evaluate a forecast against — every
+modality collected so far was a single point-in-time snapshot, which
+the blueprint's own "what Phase 0 still needs" list already flagged as
+blocking Experiments A/B's tiered/sparsity comparisons. Re-reading E1's
+own spec while starting it made this concrete rather than abstract:
+there is no such thing as "forecast the next value" from one
+observation. This had to be built first.
+
+**Built**: `scripts/collect_price_history.py` — a real, non-trivial
+discovery made this collection possible cheaply. Production already
+had this shape solved: `_fetch_faostat_yield_history()` fetches every
+real year from FAOSTAT but `collect_production.py` only kept the
+latest one. Price has the identical shape:
+`services/market/faostat_prices.py`'s `sync_faostat_prices()` already
+calls `_fetch_pp_data()` to get every real year, then deliberately
+keeps only the most-recent year per item for its own production
+caching purpose. This script calls `_fetch_pp_data()` directly and
+keeps every year instead — no new bugs to find or fix, since the
+already-verified 2026-09-17 login fix and the already-added
+`Element Code` defensive filter both carry over unchanged.
+
+**What actually happened live**, the real FAOSTAT PP time series for
+the full 4×3 scope:
+
+| Country | Coffee | Maize | Tea |
+|---|---|---|---|
+| KE | 31 yrs (1991–2024) | 32 yrs (1991–2024) | 29 yrs (1991–2024) |
+| RW | 16 yrs (1991–2015) | 30 yrs (1991–2024) | 13 yrs (1999–2015) |
+| SS | no data | no data | no data |
+| SO | no data | no data | no data |
+
+157 real observations, all `OBSERVED_VERIFIED` where data exists.
+SS/SO's zero matches the earlier price-snapshot slice's finding
+exactly — a second, independent confirmation via a completely
+different code path (the full-history fetch vs. the
+latest-year-only cache), not just the same number repeated.
+
+**A real, previously-invisible finding this only surfaces because it's
+a time series**: Rwanda's coffee and tea price reporting **stops at
+2015** while its maize reporting continues cleanly to 2024 — a full
+decade-plus gap that a single latest-snapshot observation could never
+reveal (the earlier price snapshot slice recorded RW as simply
+"observed, real" for all three commodities, which was true but
+incomplete). This is a genuine, additional evidence-availability
+dimension beyond the five already documented: even within one
+country's one modality, *recency* of the most recent real data point
+varies by commodity, and only becomes visible once you ask for more
+than one point.
+
+**Verified**: `ruff check` clean. Real counts sanity-checked against
+the raw per-country API response's own `rows` count in the request
+logs (e.g. KE returned 1284 raw PP rows across all ~30 tracked
+commodities before filtering down to these 3 — plausible given
+FAOSTAT tracks dozens of commodities per country, not a suspiciously
+round or truncated number).
+
+**Phase 0 status**: price now has real historical depth; production's
+already-fetched-but-discarded full history (available via the exact
+same pattern, `_fetch_faostat_yield_history()`) is the obvious next,
+cheap follow-up to give E1 a second time-series modality. Weather,
+trade, and text remain single-snapshot — NASA POWER and UN Comtrade
+both support real date-range queries so weather/trade could follow the
+same pattern; text is inherently a point-in-time signal (a week's news
+coverage) and would need repeated collection over real calendar time
+to become a series, not a single richer query. **E1 can now begin in a
+narrow, honest form**: price-only (T0) forecasting for KE and RW,
+where real multi-year history exists — SS/SO and the higher evidence
+tiers (T1–T4) remain blocked on the missing modalities' own histories.
