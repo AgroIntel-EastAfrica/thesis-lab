@@ -1377,3 +1377,84 @@ behind it rather than leaving it as an abstract judgment call.
 **Verified**: pure analysis over already-collected real data, no new
 collection, no code changes to `run_e1_forecast.py` (the lag
 construction was checked and confirmed correct, not modified).
+
+### Phase 0, twelfth slice — 2026-09-19: the third real time series
+(weather), and a real change of technique
+
+**Built**: `scripts/collect_weather_history.py`. Unlike the price/
+production history slices (which extended an already-fetching-every-
+year-and-discarding function), this one uses a genuinely different
+real NASA POWER endpoint: `temporal_api="monthly"` instead of
+`"daily"`. A live test confirmed the real response shape first before
+writing the collector — each parameter returns 12 real `YYYYMM` keys
+plus a 13th real `YYYY13` key holding that year's annual mean, so one
+real API call per country covers the entire 1991–2024 range in a
+single request (unlike trade, which needs one call per year and has
+already hit a hard quota twice this session; NASA POWER carries no
+comparable rate-limit risk — its original 8/8 single-snapshot calls
+this session all succeeded cleanly).
+
+**What actually happened live**: all 4 countries, both parameters, all
+34 years (1991–2024), zero fill-value sentinels hit — 272 real
+observations, the cleanest collection of any modality so far (no
+gaps, no zeros, no partial coverage). This is a second, deeper
+confirmation of the original weather-modality finding: availability
+here really is uniform across the price-modality's country tiers,
+now demonstrated across a full 34-year window instead of one day.
+
+**Verified**: `ruff check` clean. Coordinates reused as-is from
+`collect_weather.py` (already verified this session), not re-derived.
+
+### Phase 0 → Experiment E1, thirteenth slice — 2026-09-19: adding a
+weather tier — a real, nuanced result, not a clean "more evidence
+helps" story
+
+**Built**: `scripts/run_e1_forecast_tiers.py` — a new script, not an
+edit to `run_e1_forecast.py` (that script's own result is already
+documented and investigated in the tenth/eleventh slices above; this
+is a later, separate increment). Runs T0 (price alone), T1 (price +
+weather: temperature and precipitation), and T3 (price + weather +
+production) — T2 (+trade) is skipped, since trade still has no real
+time series. Same discipline as before: identical simple model family
+(ordinary least squares) across tiers, differing only in feature set;
+time-ordered holdout; same 6 real KE/RW × coffee/maize/tea series.
+
+**What actually happened, real aggregate results across all 6
+series**:
+
+| Metric | T0 (price) | T1 (+weather) | T3 (+weather+production) |
+|---|---|---|---|
+| MAE | 274.6 | 276.5 | 281.8 |
+| RMSE | 357.5 | 370.0 | 368.2 |
+| MAPE | 15.0% | 14.5% | 14.5% |
+| Directional accuracy | 0.489 | **0.594** | 0.533 |
+
+**The honest reading**: this is not a clean "more evidence, more
+accuracy" result, and it doesn't need to be forced into one. Weather
+(T1) gives a real, meaningful jump in directional accuracy (0.489 →
+0.594 — genuinely useful if the real decision this feeds is "will
+price go up or down," not just "by how much") and a modest MAPE
+improvement, but *worse* MAE and RMSE than price alone — plausible
+because weather occasionally helps get the sign right on a volatile
+year while still missing the magnitude, which MAE/RMSE punish more
+than a correct-direction-wrong-size miss does. Adding production on
+top of weather (T3) does **not** uniformly improve on T1 alone — MAE,
+RMSE, and directional accuracy all get worse from T1 to T3, only MAPE
+ties — directly consistent with the eleventh slice's finding that
+production evidence specifically struggles for some of these series
+(KE coffee/tea), now confirmed again via an independent comparison
+structure (T1→T3 within the same run, not just T0→T0+Production in
+isolation).
+
+**What this adds to the experiment's real, refined finding**: not
+every evidence modality helps the same metric the same way. Weather
+helped *direction*, not *magnitude*; production actively worked
+against *both* on top of weather. A single blended "does evidence
+help" verdict would have hidden this — reporting per-metric,
+per-modality effects rather than one aggregate score is itself now a
+demonstrated methodological necessity, not just a stated principle
+from the blueprint's Metrics section.
+
+**Verified**: `ruff check` clean on both new files. No data leakage
+(same `yr - 1` construction pattern, extended to three feature groups,
+checked the same way as the eleventh slice's investigation).
