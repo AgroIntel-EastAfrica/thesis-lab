@@ -1171,3 +1171,49 @@ to become a series, not a single richer query. **E1 can now begin in a
 narrow, honest form**: price-only (T0) forecasting for KE and RW,
 where real multi-year history exists — SS/SO and the higher evidence
 tiers (T1–T4) remain blocked on the missing modalities' own histories.
+
+### Phase 0, ninth slice — 2026-09-19: the second real time series
+(production) — the cheap follow-up, confirmed genuinely cheap
+
+**Built**: `scripts/collect_production_history.py`. Exactly the
+predicted follow-up from the previous slice:
+`_fetch_faostat_yield_history()` already returns a full year→MT/ha
+dict; `collect_production.py` (the original production collector) kept
+only the latest year, matching every other Phase 0 collector's
+single-snapshot convention before that convention was identified as
+blocking E1. This script keeps every year instead — no new bugs, no
+new auth/element-code work, the exact same already-fixed real function.
+
+**What actually happened live**: 465 real observations, the deepest
+history of any modality collected so far. KE and RW get the full
+**64-year FAOSTAT record (1961–2024)** for all three commodities — not
+just "many years" but literally FAOSTAT's entire QCL time series for
+this area/item pair. SS gets 13 years of maize only (2012–2024,
+matching its real national statistical capacity coming online only
+recently). SO gets the full 64 years for maize only. SS and SO both
+still return zero for coffee and tea — a third independent confirmation
+of the same real finding (production data availability follows
+commodity, not country tier), now visible across the entire 64-year
+window rather than one snapshot year, so it isn't a one-year reporting
+gap — these countries have *never* had FAOSTAT-tracked coffee/tea
+production data, going back to 1961.
+
+**Verified**: `ruff check` clean. Real per-row counts match exactly
+what the earlier production-snapshot slice already established
+(64/64/64/64/64/64/0/64/0/13/0/0 years per KE/RW/SS/SO × coffee/maize/
+tea), now as a genuine time series rather than a single point read off
+the same underlying data.
+
+**Phase 0 status**: two of five modalities (price, production) now
+have real multi-year time series; both happened to be "cheap" once
+found, because both `_fetch_pp_data()` and `_fetch_faostat_yield_
+history()` already fetched full real histories internally and only
+needed to stop discarding them. Weather and trade would need genuine
+new work (repeated real API calls across real dates, not a single
+richer query) to become time series; text is structurally a
+point-in-time signal. **E1 can now run two tiers meaningfully wider
+than before**: price-only (T0) and price+production for KE/RW, with
+SS/SO limited to whichever tiers include only maize-tracked modalities.
+The next real step is either extending weather/trade to genuine
+multi-date collection, or actually running E1's first forecast against
+what already exists.
