@@ -1294,3 +1294,86 @@ weather/trade become real time series) to increase statistical power;
 investigating the KE coffee/tea regressions specifically rather than
 averaging over them; and eventually the real 30-day-forecast task once
 a modality with that granularity exists.
+
+### Phase 0 → Experiment E1, eleventh slice — 2026-09-19: why did
+production evidence hurt KE coffee/tea? — a real mechanism, and a
+correction to how the previous slice's aggregate should be read
+
+**What was investigated**: pulled the exact real (year, price, lag
+price, lag production) triples the E1 script actually used for each
+series' test window, rather than guessing from the aggregate numbers
+alone.
+
+**Finding 1 — KE's real price series has mid-series gaps**: coffee is
+missing 2017–2019 entirely; tea is missing 2017–2021. `run_e1_forecast
+.py`'s lag construction (`yr - 1 in price`) already handles this
+correctly — years immediately after a gap (2020 for coffee) are
+excluded from being a lag target, since their true lag-1 value doesn't
+exist — confirmed no leakage or artificial cross-gap pairing occurred.
+This was checked and ruled out as the cause, not assumed innocent.
+
+**Finding 2 — KE coffee's 2021 test year is a real, extreme, well-
+known global price shock**: price jumped **+96.2%** year-over-year
+(2020: \$3062/tonne → 2021: \$6008/tonne), then crashed **-31.0%** the
+following year — consistent with the real, globally-documented 2021
+coffee price surge (Brazil frost/drought damage to the world's largest
+producer). KE's own production yield barely moved across this whole
+window (0.031 → 0.032 → 0.047 MT/ha) — a national yield statistic has
+no way to reflect a *foreign* supply shock that moved the world price.
+This single real outlier year dominates both models' error almost
+identically (T0 MAE 999.07 vs. T0+Production MAE 1001.21) — the models
+aren't meaningfully different here; neither can see a global shock
+coming from a national yield number, so the previous slice's
+"essentially unchanged" reading for KE coffee was the right one.
+
+**Finding 3 — KE tea's directional-accuracy drop (1.00 → 0.60) has a
+real, mechanistic explanation**: KE tea's production series shows a
+genuine, gradual multi-decade **upward trend** (≈0.83–0.95 MT/ha in
+the early 2010s → ≈1.07–1.18 MT/ha by 2022–2024), while its price
+series over the same test years shows no trend at all — sharp,
+mean-reverting swings (-14.7%, +39.3%, -19.3%, -10.5%, -1.2%) with no
+relationship to the slow yield increase. Feeding a steadily-rising,
+economically-unrelated feature into a linear model alongside a
+volatile, trendless target is a textbook way to bias that model's
+directional calls toward "up" — spurious correlation from two series
+that both drift over decades for unrelated reasons, not real
+predictive signal. This is a genuine case of *added evidence actively
+hurting* a forecast, not a null result — worth keeping, not just
+averaging away.
+
+**Finding 4 — RW coffee's apparent "improvement" is a small-sample
+artifact, not evidence of a real effect**: RW coffee's price series is
+sparse enough (gaps throughout 1991–2010, then a lone 2015 that can't
+even be used as a lag target since 2014 is missing) that its `n_test=2`
+test years are both drawn from a calm stretch (2009: +18.4%, 2010:
+-2.6% YoY) — nothing like KE coffee's 2021 shock. A 2-point test set
+where neither point is a large swing is the easiest case for any
+second feature to look like it "helps," almost regardless of what that
+feature is. This is not strong evidence that production evidence
+generally helps RW coffee forecasting — it is weak evidence from a
+window too calm and too short to be very informative either way.
+
+**The honest correction this requires**: the previous slice's
+aggregate ("T0+Production wins on all 4 metrics") is still the real,
+correctly-computed number, but this investigation shows *why* it
+should not yet be read as "adding evidence generally helps" — the
+result is dominated by (a) one series (RW coffee) whose improvement is
+most plausibly a small, calm-window sample artifact, and (b) two
+series (KE coffee, KE tea) where the real mechanism is either "an
+unpredictable foreign shock swamps any national feature" or "a
+slow-moving unrelated trend actively misleads a volatile target," not
+"more evidence, more accuracy." The real, useful finding from this
+pair of slices together is narrower and more interesting than the
+aggregate alone suggested: **whether a second evidence modality helps
+depends on whether that modality's real variation is actually
+causally connected to the target's real variation over the test
+window** — a genuinely testable, more precise version of RQ1 than "add
+more data and see," and a concrete instance of exactly the kind of
+evidence-*relevance* (the R dimension) question the `EvidenceQualityVector`
+rubric already flagged production as scoring only 0.90 on for price
+(not 1.00) — this investigation gives that number a real mechanism
+behind it rather than leaving it as an abstract judgment call.
+
+**Verified**: pure analysis over already-collected real data, no new
+collection, no code changes to `run_e1_forecast.py` (the lag
+construction was checked and confirmed correct, not modified).
