@@ -1217,3 +1217,80 @@ SS/SO limited to whichever tiers include only maize-tracked modalities.
 The next real step is either extending weather/trade to genuine
 multi-date collection, or actually running E1's first forecast against
 what already exists.
+
+### Phase 0 → Experiment E1, tenth slice — 2026-09-19: the first real
+forecast run — does a second evidence modality actually help?
+
+**A real, stated scope narrowing before results, not after**: the
+blueprint's own Success Metrics section names 30-day price forecasting
+as the primary task. No modality has real daily/monthly history yet —
+FAOSTAT PP/QCL (the only two with any real series) are both annual
+publications. `scripts/run_e1_forecast.py` runs **annual** next-year
+price forecasting instead, the only real task the currently-collected
+data can support. 30-day forecasting remains real future work, blocked
+on a modality with genuine daily/monthly ground truth — not silently
+substituted for here.
+
+**Design**: only T0 (price alone) vs. price+production — not the full
+T0–T4 ladder, since weather/trade/text still have no real history
+(fabricating one for them would violate this experiment's founding
+rule against treating synthetic data as observed ground truth). Both
+models are deliberately the same simple family (ordinary least
+squares, `sklearn.LinearRegression`) differing only in feature count —
+T0 predicts year *t*'s price from year *t*−1's price; T0+Production
+adds year *t*−1's yield as a second feature — so any accuracy
+difference reflects the evidence added, not a fancier model. Split is
+time-ordered (last ~20% of each series' real years held out), never
+random — a real backtest. Run only for the 6 (country, commodity)
+pairs with real, non-empty, aligned price *and* production history
+(KE/RW × coffee/maize/tea) — SS/SO are excluded, not silently dropped:
+both are synthetic-baseline for price, and this experiment's core rule
+is that only real observed data may be a forecasting target.
+
+**What actually happened, real backtested results on held-out years
+(2–6 test years per series depending on real data length)**:
+
+| Series | n train / test | T0 MAE / MAPE / dir.acc | T0+Production MAE / MAPE / dir.acc |
+|---|---|---|---|
+| KE coffee | 23 / 6 | 999.07 / 19.8% / 0.33 | 1001.21 / 19.9% / 0.50 |
+| KE maize | 24 / 6 | 52.27 / 12.3% / 0.50 | 51.56 / 12.1% / 0.50 |
+| KE tea | 22 / 5 | 363.71 / 14.1% / 1.00 | 387.61 / 15.2% / 0.60 |
+| RW coffee | 9 / 2 | 126.67 / 9.1% / 0.50 | 75.42 / 5.4% / 0.50 |
+| RW maize | 22 / 5 | 82.76 / 19.5% / 0.60 | 81.38 / 18.5% / 0.80 |
+| RW tea | 9 / 2 | 23.32 / 15.3% / 0.00 | 22.26 / 14.6% / 0.50 |
+
+**Aggregate across all 6 series**: MAE 274.6 → 269.9, RMSE 357.5 →
+348.2, MAPE 15.0% → 14.3%, directional accuracy 0.489 → 0.567 — T0+
+Production wins on **all four** metrics.
+
+**The honest reading, not the convenient one**: the aggregate favors
+adding production evidence, but the per-series picture is genuinely
+mixed, not uniform — KE coffee and KE tea got *worse* with production
+added (real, not noise-hidden: KE tea's directional accuracy dropped
+from a perfect 1.00 to 0.60), while RW coffee improved substantially
+(MAPE 9.1% → 5.4%). This is directionally consistent with RQ1's
+premise (heterogeneous evidence helps) but **not strong evidence on
+its own** — 6 series, 2–6 held-out years each, is a genuinely small
+sample; a single volatile test year (RW coffee's 2-year test window in
+particular) can swing a series' numbers substantially. This is
+reported as the real, first, preliminary result it is — not
+oversold as validating H1, and not the 30-day-forecast result the
+blueprint originally specified.
+
+**Verified**: `ruff check` clean. sklearn/numpy already present in the
+environment (no new thesis-lab dependency needed). No data leakage —
+every test-year prediction uses only strictly-prior real years' price
+and production values, confirmed by construction (`build_xy` only ever
+indexes `yr - 1`).
+
+**What this actually establishes for Paper 14**: E1 is no longer
+untested — there is now one real, honestly-caveated data point
+answering "does adding evidence help forecasting" for this narrow
+annual, 2-modality, 6-series slice, with a small but real
+directionally-positive effect and real per-series exceptions that
+themselves are worth investigating (why did production evidence hurt
+KE coffee/tea specifically?). Real next steps: more series (once
+weather/trade become real time series) to increase statistical power;
+investigating the KE coffee/tea regressions specifically rather than
+averaging over them; and eventually the real 30-day-forecast task once
+a modality with that granularity exists.
