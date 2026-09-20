@@ -37,7 +37,7 @@ from pathlib import Path
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPT_DIR))
-sys.path.insert(0, str(_SCRIPT_DIR.parents[3]))
+sys.path.insert(0, str(_SCRIPT_DIR.parents[2] / "agrointel"))  # agrointel submodule, for services.*/clients.*/apps.*
 
 from provenance import DataState, GoldStandardObservation  # noqa: E402
 

@@ -26,7 +26,7 @@ from pathlib import Path
 
 _SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPT_DIR))
-sys.path.insert(0, str(_SCRIPT_DIR.parents[3]))
+sys.path.insert(0, str(_SCRIPT_DIR.parents[2] / "agrointel"))  # agrointel submodule, for services.*/clients.*/apps.*
 
 from evidence_quality_rubric import score_observation  # noqa: E402
 from provenance import GoldStandardObservation  # noqa: E402
