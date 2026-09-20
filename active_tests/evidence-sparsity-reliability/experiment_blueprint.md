@@ -539,10 +539,67 @@ experiment's older numbers):
 | Agent behavior | appropriate retrieval rate, unnecessary retrieval rate, appropriate abstention, unsafe recommendation rate |
 | Decision | decision quality, risk identification, confidence, appropriate reliance |
 
-Decided-before-looking-at-results criteria for each hypothesis (H1–H5)
-still need to be pinned down numerically once Phase 0's gold-standard
-dataset exists — flagged as the first concrete task of Phase 1, not
-guessed at here.
+### Success criteria per hypothesis — pinned down 2026-09-20
+
+**A real timing problem, stated honestly rather than hidden**: this
+section's own name promises "decided-before-looking-at-results"
+criteria. That is only true for H2–H5 below — E1 already ran (the
+blueprint's tenth/eleventh/thirteenth slices) before this section was
+written, so any numeric threshold for H1 written *now* would be
+post-hoc, not pre-registered, no matter how it's phrased. H1 is
+therefore given a **retrospective** criterion instead — stated as what
+a reasonable bar would have been, applied honestly to data already
+seen, not dressed up as a prediction. H2–H5 have no results yet (E2–E4
+haven't run), so their criteria below genuinely are decided before
+looking — the real thing this section originally promised, just not
+for all five hypotheses at once.
+
+- **H1 — evidence availability** (retrospective, not pre-registered):
+  a reasonable a priori bar — "affects forecasting performance"
+  supported if MAPE differs by ≥2 percentage points *or* directional
+  accuracy differs by ≥10 points between evidence tiers tested.
+  Applied to the real E1 results already obtained: directional
+  accuracy moved by +10.5 points (T0→T1, 0.489→0.594, clears the bar);
+  MAPE moved by only 0.5 points (15.0%→14.3%, does not). **Partial,
+  metric-dependent support** — consistent with H1's own "affects"
+  wording (not "always improves"): T1→T3 also showed evidence
+  actively *worsening* RMSE, which is itself evidence for H1's neutral
+  framing over a naively optimistic reading of it.
+- **H2 — evidence quality** (pre-registered, E3 not yet run):
+  supported if substituting a *corrupted* value (wrong country, wrong
+  price basis, or a stale/expired year — Experiment C's real
+  conditions) for one real input produces mean MAPE **≥5 percentage
+  points higher** than simply *omitting* that input (i.e., demonstrably
+  worse than admitted-missing evidence, not just similarly bad). Not
+  supported if the gap is under 2 points.
+- **H3 — calibration** (pre-registered, E2 not yet run, grounded in a
+  real prior number): the concluded experiment found 80% stated
+  confidence vs. 38.5% observed coverage — a real 41.5-point miss.
+  Supported if, at 100% evidence availability, a calibrated model
+  (Baseline C/D) lands within **10 points** of its nominal confidence
+  (e.g. 80% nominal → 70–90% observed) while the uncalibrated baseline
+  (Baseline A) misses by **more than 20 points** — beating the
+  concluded experiment's own real failure, not an arbitrary target.
+  Further supported if the calibrated model's coverage stays within 15
+  points of nominal even at 25% evidence availability, while the
+  uncalibrated baseline's gap widens by more than 15 points over that
+  same range (degrades more gracefully, not just starts better).
+- **H4 — evidence grounding** (pre-registered, E3's agent harness not
+  yet built): supported if an agent with evidence verification (checks
+  a retrieved value's `DataState` before using it) produces an
+  unsupported-claim rate **≥15 percentage points lower** than an
+  equivalent agent without verification, across Scenarios A–E.
+- **H5 — abstention** (pre-registered, E4 not yet run): supported if
+  an uncertainty-aware agent's abstention rate is **non-decreasing**
+  across Experiment B's 5 sparsity levels (100%→10%) *and* exceeds
+  **50%** at the 10% level (defers on the majority of genuinely
+  insufficient cases), while its false-abstention rate at 100%
+  availability stays **under 10%** (doesn't defer when it shouldn't).
+
+**Status**: a first, defensible draft grounded in real numbers where
+they exist (H3's threshold is not arbitrary — it's the concluded
+experiment's own documented failure), not yet reviewed by the project
+owner or an advisor — real future work, not a hidden gap.
 
 ### Planned phase sequence
 
