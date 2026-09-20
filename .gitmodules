@@ -1,3 +1,4 @@
 [submodule "agrointel"]
 	path = agrointel
 	url = https://github.com/AgroIntel-EastAfrica/agrointel.git
+	branch = develop
