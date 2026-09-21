@@ -1691,3 +1691,39 @@ evaluating on evidence bundles it wasn't designed with in mind.
 grounding (KE coffee's \$4,886.5/tonne 2024 price, \$518,720,901 2023
 trade value) checked directly against the raw JSON files before being
 written into the script, not typed from memory.
+
+## Experiment E4 — Decision reliability: protocol only
+
+**2026-09-21**: E4 is a human-subjects study (decision accuracy,
+response time, override behavior across 5 presentation formats) — not
+something a coding session can execute; simulating synthetic
+"participants" would be fabrication, not research. Wrote the real
+study protocol instead: [`E4_study_protocol.md`](E4_study_protocol.md).
+
+The worked decision scenario in it is built from real numbers this
+experiment already computed, not invented ones — KE coffee, 2024: real
+2023 price (\$4,391.70/tonne) → T0 forecast \$3,934.60/tonne (E1) → T1
+forecast \$4,253.00/tonne (E1) → real 80% LOO-conformal interval
+\$2,383.30–\$5,486.00/tonne (E2) → E3's real `SUFFICIENT`
+classification for this case → real 2024 actual, \$4,886.50/tonne
+(above every point forecast, inside the T0 interval). The 5 formats
+range from raw data through a bare point-forecast (the real failure
+mode E2 exists to correct) to the full evidence+uncertainty
+presentation.
+
+**Explicitly not run** — needs real participant recruitment, informed
+consent, and institutional review (the source proposal names Makerere
+University, UBOS, and MAAIF, and commits to "institutional review
+requirements where applicable"; whether/how that applies here is the
+advisor's/institution's call, not assumed in this protocol). Also
+flagged as incomplete on its own terms: only 1 of the intended 3
+scenarios (sufficient/insufficient/stale) is fully worked out, and no
+power analysis has been done yet.
+
+**Where this leaves Paper 14**: all four sub-experiments (E1–E4) have
+now been touched — three with real, computed results (E1 x2, E2 x2, E3
+x1), one with a real, ready-to-run protocol (E4) rather than simulated
+results. Phase 0 and the four sub-experiments together are Paper 14's
+full designed scope; what remains is depth (more series, systematic
+sparsity sweeps, the full 5-scenario E4 battery) and, for E4
+specifically, an actual human study this session cannot run alone.
