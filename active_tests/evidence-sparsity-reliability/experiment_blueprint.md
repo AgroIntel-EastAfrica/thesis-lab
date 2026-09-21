@@ -1588,3 +1588,58 @@ pattern.
 **Verified**: `ruff check` clean. No data leakage (LOO residuals
 computed only from training years; the nominal-confidence half-width
 is fixed before any test-year value is examined).
+
+## Experiment E2, second run — does adding evidence help or hurt calibration?
+
+**2026-09-21**: extended `run_e2_calibration.py`'s two baselines (A:
+uncalibrated in-sample residuals; D: LOO-conformal) to a second tier,
+T1 (price + weather), in a new `run_e2_calibration_tiers.py` — the
+same feature-building pattern already used in `run_e1_forecast_tiers
+.py`. Real question: does adding evidence change calibration quality,
+not just point-forecast accuracy?
+
+**What actually happened, pooled across the same 6 series (26 test
+points per tier)**:
+
+| Tier | Baseline A | Baseline D |
+|---|---|---|
+| T0 (price alone) | 69.2% (10.8pt miss) | 73.1% (6.9pt miss) |
+| T1 (price + weather) | 61.5% (18.5pt miss) | 69.2% (10.8pt miss) |
+
+**Adding weather made calibration measurably worse for both
+baselines**, not better — the miscalibration gap widened by roughly
+70% (Baseline A) and 57% (Baseline D) going from T0 to T1. The
+clearest single case: RW coffee's Baseline A coverage collapsed from
+100% at T0 to **0%** at T1 (both of its 2 real test points fell
+outside the interval once weather was added).
+
+**A real, mechanistic explanation, not just a surprising number**:
+these series have only 9–24 real training points. T1 fits 3 parameters
+(intercept, lag-price coefficient, temperature coefficient — and
+precipitation makes it 4) instead of T0's 2, on the same tiny sample.
+More parameters estimated from the same small amount of data means
+more variance in the fitted coefficients, which shows up as wider
+out-of-sample prediction error than the *training* residual spread
+(Baseline A) or even the *leave-one-out* residual spread (Baseline D)
+anticipated — both baselines' uncertainty estimates were built from
+training-time information that couldn't see this real cost of adding
+a feature on so little data. This is the same underlying "more
+evidence isn't free" theme the E1 slices already found for accuracy,
+now shown to apply to *calibration* too, and via a different,
+independently-motivated mechanism (small-sample parameter variance,
+not spurious trend correlation or an unpredictable macro shock).
+
+**Why this matters for the experiment's real, refined finding**: it
+strengthens the pattern already emerging across E1 and E2 together —
+adding a second evidence modality is not uniformly beneficial, and the
+specific way it can hurt varies (spurious trend correlation for KE
+tea's directional accuracy in E1; small-sample calibration variance
+here). A system that only tracked point-forecast accuracy would miss
+this entirely, since calibration and accuracy can move in different
+directions from the same evidence addition — direct support for
+evaluating forecasting, calibration, and evidence quality as separate,
+not conflated, dimensions (exactly the blueprint's own Metrics-by-
+category design).
+
+**Verified**: `ruff check` clean. Same time-ordered holdout and no-
+leakage discipline as every prior slice.
