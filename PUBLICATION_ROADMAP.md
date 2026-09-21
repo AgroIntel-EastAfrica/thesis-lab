@@ -165,6 +165,14 @@ In order of near-term focus:
 ## GitHub tracking
 
 Each experiment above has a matching GitHub Issue (titled `[Thesis Lab]
-<name>`) on the [AgroIntel Thesis Lab project board](https://github.com/users/jericho555/projects/1).
-Each paper above corresponds to a GitHub Milestone of the same name — every
-issue is assigned to its paper's milestone.
+<name>`) in [this repo's own issue tracker](https://github.com/AgroIntel-EastAfrica/thesis-lab/issues),
+tracked on the [AgroIntel Thesis Lab project board](https://github.com/users/jericho555/projects/1).
+Each paper above corresponds to a GitHub Milestone of the same name in
+this repo — every issue is assigned to its paper's milestone. Moved here
+2026-09-21 from `agrointel`'s issue tracker (where this section
+originally pointed) as part of the same repo split that moved this
+whole lab out — real GraphQL `transferIssue`, not close-and-recreate,
+so issue bodies/comments/history are preserved (issue numbers changed,
+since each repo has its own numbering; milestones and project-board
+membership had to be reassigned by hand afterward, since neither
+carries over automatically on a cross-repo transfer).
