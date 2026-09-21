@@ -26,12 +26,20 @@ t-1's price; T0+Production adds year t-1's yield as a second feature.
 Time-ordered holdout (last ~20% of each series' real years, never
 random shuffle) - a real backtest, not a leaky one.
 
-Only run for KE/RW x coffee/maize/tea: the 6 (country, commodity)
-pairs with real, non-empty price AND production histories. SS/SO are
-excluded from this run, not silently dropped - both are OBSERVED_
-UNKNOWN for the price modality (synthetic-baseline territory), and
-this experiment's core rule is that only real observed data may be a
-forecasting target.
+Only run for country/commodity pairs with real, non-empty price AND
+production histories. SS/SO/UG/CD are excluded from this run, not
+silently dropped - all four are OBSERVED_UNKNOWN for the price
+modality (confirmed live, zero real FAOSTAT PP rows for any of them,
+same as SS/SO), and this experiment's core rule is that only real
+observed data may be a forecasting target. TZ and BI added 2026-09-21
+once their real price/production/weather histories were collected;
+the per-pair skip logic below already handles TZ's price gap (maize
+only - no real FAOSTAT PP coffee/tea series for Tanzania) without any
+script change. Also applies `regime_break.restrict_to_latest_regime()`
+to every price series before fitting - see that module's docstring for
+why (a real, official FAOSTAT price-basis break in Burundi and
+Rwanda's coffee series, confirmed against the raw rows, unrelated to
+this collector).
 
 Usage:
   python thesis-lab/active_tests/evidence-sparsity-reliability/scripts/run_e1_forecast.py
@@ -52,9 +60,10 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPT_DIR))
 
 from provenance import DataState  # noqa: E402
+from regime_break import restrict_to_latest_regime  # noqa: E402
 
-COUNTRIES = ["KE", "RW"]
-COMMODITIES = ["coffee", "maize", "tea"]
+COUNTRIES = ["KE", "RW", "TZ", "BI"]
+COMMODITIES = ["coffee", "maize", "tea", "sorghum", "sweet_potatoes"]
 _MIN_YEARS_FOR_SPLIT = 8
 
 
@@ -144,10 +153,12 @@ def main() -> None:
     for cc in COUNTRIES:
         for comm in COMMODITIES:
             key = (cc, comm)
-            price = price_series.get(key, {})
+            price, break_year = restrict_to_latest_regime(price_series.get(key, {}))
             production = production_series.get(key, {})
-            result = run_one_series(price, production)
             label = f"{cc} {comm}"
+            if break_year is not None:
+                print(f"{label}: real regime break detected at {break_year} - restricting to {break_year}+ ({len(price)} years)")
+            result = run_one_series(price, production)
             if result is None:
                 print(f"{label}: skipped (insufficient real aligned data)")
                 continue

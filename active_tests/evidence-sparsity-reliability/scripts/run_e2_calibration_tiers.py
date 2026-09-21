@@ -11,9 +11,14 @@ rather than sparsity percentage, since real sparsity-level data
 doesn't exist yet (every modality is still a single real time series,
 not resampled at multiple completeness levels).
 
-Same 6 real KE/RW x coffee/maize/tea series, same time-ordered
-holdout, same 80% nominal target as run_e2_calibration.py - a
-comparable, not a new, benchmark.
+Same real series, same time-ordered holdout, same 80% nominal target
+as run_e2_calibration.py - a comparable, not a new, benchmark. TZ and
+BI added 2026-09-21 alongside KE/RW once their real histories were
+collected (TZ contributes maize only). Also applies
+`regime_break.restrict_to_latest_regime()` to every price series
+before fitting - see that module's docstring for why (a real, official
+FAOSTAT price-basis break in Burundi and Rwanda's coffee series,
+confirmed against the raw rows, unrelated to this collector).
 
 Usage:
   python thesis-lab/active_tests/evidence-sparsity-reliability/scripts/run_e2_calibration_tiers.py
@@ -33,9 +38,10 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPT_DIR))
 
 from provenance import DataState  # noqa: E402
+from regime_break import restrict_to_latest_regime  # noqa: E402
 
-COUNTRIES = ["KE", "RW"]
-COMMODITIES = ["coffee", "maize", "tea"]
+COUNTRIES = ["KE", "RW", "TZ", "BI"]
+COMMODITIES = ["coffee", "maize", "tea", "sorghum", "sweet_potatoes"]
 _MIN_YEARS_FOR_SPLIT = 8
 _NOMINAL_CONFIDENCE = 0.80
 _Z_80 = 1.2816
@@ -152,8 +158,11 @@ def main() -> None:
         precip = weather_series.get(cc, {}).get("precipitation_corrected", {})
         for comm in COMMODITIES:
             key = (cc, comm)
-            result = run_one_series(price_series.get(key, {}), temp, precip)
+            price, break_year = restrict_to_latest_regime(price_series.get(key, {}))
             label = f"{cc} {comm}"
+            if break_year is not None:
+                print(f"{label}: real regime break detected at {break_year} - restricting to {break_year}+ ({len(price)} years)")
+            result = run_one_series(price, temp, precip)
             if result is None:
                 print(f"{label}: skipped (insufficient real aligned data)")
                 continue

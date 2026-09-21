@@ -44,12 +44,21 @@ sys.path.insert(0, str(_SCRIPT_DIR.parents[2] / "agrointel"))  # agrointel submo
 from provenance import DataState, GoldStandardObservation  # noqa: E402
 
 # Same real capital coordinates already verified and used by
-# collect_weather.py - reused as-is, not re-derived.
+# collect_weather.py - reused as-is, not re-derived. TZ and BI added
+# 2026-09-21, read from configs/countries/*.yaml - TZ's config
+# explicitly labels its coordinates as the commercial capital, Dar es
+# Salaam, not the legislative capital, Dodoma. UG and CD added the
+# same day, completing all 8 EAC countries, also read from
+# configs/countries/*.yaml.
 _COUNTRY_COORDS = {
     "KE": (-1.2921, 36.8219),  # Nairobi
     "RW": (-1.9536, 30.0606),  # Kigali
     "SS": (4.8517, 31.5825),   # Juba
     "SO": (2.0469, 45.3182),   # Mogadishu
+    "TZ": (-6.7924, 39.2083),  # Dar es Salaam (commercial capital)
+    "BI": (-3.3761, 29.3600),  # Gitega
+    "UG": (0.3476, 32.5825),   # Kampala
+    "CD": (-4.4419, 15.2663),  # Kinshasa
 }
 _PARAMETERS = {"T2M": ("temperature_2m", "celsius"), "PRECTOTCORR": ("precipitation_corrected", "mm/day")}
 _START_YEAR = "1991"
@@ -92,7 +101,7 @@ async def collect_country(country: str) -> list[GoldStandardObservation]:
 
 async def collect_all() -> list[GoldStandardObservation]:
     all_obs: list[GoldStandardObservation] = []
-    for country in ["KE", "RW", "SS", "SO"]:
+    for country in ["KE", "RW", "SS", "SO", "TZ", "BI", "UG", "CD"]:
         all_obs.extend(await collect_country(country))
     return all_obs
 

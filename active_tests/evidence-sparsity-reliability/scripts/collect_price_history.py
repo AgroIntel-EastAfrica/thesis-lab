@@ -23,6 +23,31 @@ login/auth flow already fixed and verified this session
 anywhere. Output is a local JSON file under this experiment's own
 data/ directory.
 
+UG and CD added 2026-09-21, completing all 8 EAC countries -
+prompted by a direct question ("why not all EAC countries?") after TZ/
+BI were added. Both have real FAOSTAT area codes already mapped in
+services/market/faostat_prices.py (UG=226, CD=250) - nothing was
+blocking them, they simply hadn't been included yet. Checked live
+before adding: both return zero rows from the FAOSTAT PP domain
+entirely (confirmed via a direct raw fetch, not assumed), the same
+shape as SS/SO. Included anyway, following the same principle already
+applied to SS/SO - a country with confirmed real zero price data is
+real, useful information for this project's evidence-availability
+question, not something to omit for a tidier dataset.
+
+Sorghum and sweet potatoes added 2026-09-21, per the project owner's
+explicit direction to keep the region's main exported cash crops
+(coffee, tea) and add the best-covered real crops on top, not replace
+one with the other. Checked live across all 8 countries' raw PP rows
+first, not guessed: of 31 candidate FAOSTAT items, 13 have real price
+data in all 4 of Kenya/Rwanda/Tanzania/Burundi - coffee and tea, by
+contrast, are only 3/4 (Tanzania has no real FAOSTAT PP record for
+either). Sorghum (98 total years, 18-31 per country) and sweet
+potatoes (91 total years, 13-31 per country) were the two best-covered
+4/4 candidates with no single country reduced to a thin stub - several
+others (rice, potatoes, beans, cassava) are also technically 4/4 but
+all share the same weak spot, only 5 real Tanzania years.
+
 Usage:
   python thesis-lab/active_tests/evidence-sparsity-reliability/scripts/collect_price_history.py
 """
@@ -41,8 +66,8 @@ sys.path.insert(0, str(_SCRIPT_DIR.parents[2] / "agrointel"))  # agrointel submo
 
 from provenance import DataState, GoldStandardObservation  # noqa: E402
 
-COUNTRIES = ["KE", "RW", "SS", "SO"]
-COMMODITIES = ["coffee", "maize", "tea"]
+COUNTRIES = ["KE", "RW", "SS", "SO", "TZ", "BI", "UG", "CD"]
+COMMODITIES = ["coffee", "maize", "tea", "sorghum", "sweet_potatoes"]
 _PP_ELEMENT = "5532"  # USD/tonne - same element faostat_prices.py itself uses
 
 

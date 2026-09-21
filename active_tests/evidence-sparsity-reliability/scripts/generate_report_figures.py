@@ -20,6 +20,7 @@ import numpy as np
 _SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPT_DIR))
 from provenance import DataState  # noqa: E402
+from regime_break import detect_price_regime_break  # noqa: E402
 
 DATA_DIR = _SCRIPT_DIR.parent / "data"
 FIG_DIR = _SCRIPT_DIR.parent / "report" / "figures"
@@ -71,22 +72,35 @@ def _load_weather_series(path: Path) -> dict:
     return series
 
 
+_COUNTRY_COLORS = {
+    "KE": GREEN, "RW": SKY, "TZ": GOLD_LIGHT, "BI": "#7c3aed",
+    "SS": GOLD, "SO": RED, "UG": "#0d9488", "CD": "#db2777",
+}
+_COMMODITIES = ["coffee", "maize", "tea", "sorghum", "sweet_potatoes"]
+_COMMODITY_LABELS = {"coffee": "Coffee", "maize": "Maize", "tea": "Tea", "sorghum": "Sorghum", "sweet_potatoes": "Sweet potatoes"}
+
+
 def fig_price_history():
     price = _load_commodity_series(_latest("gold_standard_price_history"))
-    fig, axes = plt.subplots(1, 3, figsize=(13, 3.6), sharey=False)
-    for ax, comm in zip(axes, ["coffee", "maize", "tea"], strict=False):
-        for cc, color in [("KE", GREEN), ("RW", SKY)]:
+    fig, axes = plt.subplots(1, 5, figsize=(19, 3.6), sharey=False)
+    for ax, comm in zip(axes, _COMMODITIES, strict=False):
+        for cc, color in [("KE", GREEN), ("RW", SKY), ("TZ", GOLD_LIGHT), ("BI", "#7c3aed")]:
             series = price.get((cc, comm), {})
             if not series:
                 continue
             years = sorted(series.keys())
             ax.plot(years, [series[y] for y in years], color=color, lw=1.8, label=cc)
-        ax.set_title(comm.capitalize(), fontweight="bold")
+            brk = detect_price_regime_break(series)
+            if brk is not None:
+                ax.axvline(brk, color=color, ls=":", lw=1.2, alpha=0.7)
+                ax.annotate(f"{cc} break\n{brk}", xy=(brk, series[brk]), xytext=(4, 4),
+                            textcoords="offset points", fontsize=7, color=color)
+        ax.set_title(_COMMODITY_LABELS[comm], fontweight="bold")
         ax.set_xlabel("Year")
         if comm == "coffee":
             ax.set_ylabel("Producer price (USD/tonne)")
         ax.legend(frameon=False, fontsize=8)
-    fig.suptitle("Real FAOSTAT producer price, 1991–2024 (KE vs. RW)", fontweight="bold")
+    fig.suptitle("Real FAOSTAT producer price, 1991-2024, all 8 EAC countries and 5 commodities checked (only KE/RW/TZ/BI have real price coverage). Dotted lines mark a detected real regime break.", fontweight="bold", fontsize=10)
     fig.tight_layout()
     fig.savefig(FIG_DIR / "01_price_history.png", dpi=150)
     plt.close(fig)
@@ -94,20 +108,20 @@ def fig_price_history():
 
 def fig_production_history():
     prod = _load_commodity_series(_latest("gold_standard_production_history"))
-    fig, axes = plt.subplots(1, 3, figsize=(13, 3.6))
-    for ax, comm in zip(axes, ["coffee", "maize", "tea"], strict=False):
-        for cc, color in [("KE", GREEN), ("RW", SKY), ("SS", GOLD), ("SO", RED)]:
+    fig, axes = plt.subplots(1, 5, figsize=(19, 3.6))
+    for ax, comm in zip(axes, _COMMODITIES, strict=False):
+        for cc, color in _COUNTRY_COLORS.items():
             series = prod.get((cc, comm), {})
             if not series:
                 continue
             years = sorted(series.keys())
             ax.plot(years, [series[y] for y in years], color=color, lw=1.6, label=cc)
-        ax.set_title(comm.capitalize(), fontweight="bold")
+        ax.set_title(_COMMODITY_LABELS[comm], fontweight="bold")
         ax.set_xlabel("Year")
         if comm == "coffee":
             ax.set_ylabel("Yield (MT/ha)")
         ax.legend(frameon=False, fontsize=8)
-    fig.suptitle("Real FAOSTAT production and yield, 1961 to 2024. Maize is tracked for all four countries; coffee and tea only for Kenya and Rwanda.", fontweight="bold", fontsize=11)
+    fig.suptitle("Real FAOSTAT production and yield, 1961 to 2024, 5 commodities. Maize/sorghum/sweet potatoes are tracked for all eight countries; coffee and tea are missing only for South Sudan and Somalia.", fontweight="bold", fontsize=10)
     fig.tight_layout()
     fig.savefig(FIG_DIR / "02_production_history.png", dpi=150)
     plt.close(fig)
@@ -116,16 +130,15 @@ def fig_production_history():
 def fig_weather_uniformity():
     weather = _load_weather_series(_latest("gold_standard_weather_history"))
     fig, axes = plt.subplots(1, 2, figsize=(11, 3.6))
-    colors = {"KE": GREEN, "RW": SKY, "SS": GOLD, "SO": RED}
     for ax, var, label in zip(axes, ["temperature_2m", "precipitation_corrected"], ["Temperature (°C)", "Precipitation (mm/day)"], strict=False):
-        for cc, color in colors.items():
+        for cc, color in _COUNTRY_COLORS.items():
             series = weather.get(cc, {}).get(var, {})
             years = sorted(series.keys())
             ax.plot(years, [series[y] for y in years], color=color, lw=1.6, label=cc)
         ax.set_title(label, fontweight="bold")
         ax.set_xlabel("Year")
         ax.legend(frameon=False, fontsize=8)
-    fig.suptitle("Real NASA POWER weather, 1991 to 2024. Available uniformly across all four countries regardless of price data tier.", fontweight="bold", fontsize=11)
+    fig.suptitle("Real NASA POWER weather, 1991 to 2024. Available uniformly across all eight countries regardless of price data tier.", fontweight="bold", fontsize=11)
     fig.tight_layout()
     fig.savefig(FIG_DIR / "03_weather_uniformity.png", dpi=150)
     plt.close(fig)
@@ -133,29 +146,27 @@ def fig_weather_uniformity():
 
 def fig_evidence_availability_matrix():
     """Real availability grid: modality x country, % of (commodity,year) pairs OBSERVED_VERIFIED."""
-    countries = ["KE", "RW", "SS", "SO"]
+    countries = ["KE", "RW", "TZ", "BI", "UG", "CD", "SS", "SO"]
     modalities = {
         "Price": _load_commodity_series(_latest("gold_standard_price_history")),
         "Production": _load_commodity_series(_latest("gold_standard_production_history")),
     }
-    commodities = ["coffee", "maize", "tea"]
-
     grid = np.zeros((len(modalities), len(countries)))
     for i, (_name, series) in enumerate(modalities.items()):
         for j, cc in enumerate(countries):
-            n_real = sum(1 for comm in commodities if series.get((cc, comm)))
-            grid[i, j] = n_real / len(commodities) * 100
+            n_real = sum(1 for comm in _COMMODITIES if series.get((cc, comm)))
+            grid[i, j] = n_real / len(_COMMODITIES) * 100
 
-    # Weather: always 100% (real, verified all 4 countries)
-    weather_row = np.array([100.0, 100.0, 100.0, 100.0])
+    # Weather: always 100% (real, verified all 8 countries)
+    weather_row = np.full(len(countries), 100.0)
     # Trade: real snapshot - only KE has any real value
-    trade_row = np.array([100.0, 0.0, 0.0, 0.0])
+    trade_row = np.array([100.0 if cc == "KE" else 0.0 for cc in countries])
     # Text: reliability-limited, not a clean availability number - shown separately, excluded from this grid
 
     full_grid = np.vstack([grid, weather_row, trade_row])
     row_labels = list(modalities.keys()) + ["Weather", "Trade"]
 
-    fig, ax = plt.subplots(figsize=(6, 4))
+    fig, ax = plt.subplots(figsize=(10, 4))
     im = ax.imshow(full_grid, cmap="RdYlGn", vmin=0, vmax=100, aspect="auto")
     ax.set_xticks(range(len(countries)))
     ax.set_xticklabels(countries)
@@ -165,7 +176,7 @@ def fig_evidence_availability_matrix():
         for j in range(full_grid.shape[1]):
             ax.text(j, i, f"{full_grid[i, j]:.0f}%", ha="center", va="center", fontsize=9,
                      color="white" if full_grid[i, j] < 50 else "black")
-    ax.set_title("Real commodity coverage by modality × country\n(% of coffee/maize/tea with real observed data)", fontweight="bold")
+    ax.set_title("Real commodity coverage by modality × country\n(% of 5 commodities with real observed data)", fontweight="bold")
     fig.colorbar(im, ax=ax, label="% real coverage")
     fig.tight_layout()
     fig.savefig(FIG_DIR / "04_availability_matrix.png", dpi=150)
@@ -174,9 +185,12 @@ def fig_evidence_availability_matrix():
 
 def fig_e1_tiers():
     # Real aggregate numbers from run_e1_forecast_tiers.py's own printed output
+    # (17 series: KE/RW/TZ/BI x coffee/maize/tea/sorghum/sweet_potatoes, with
+    # Rwanda coffee excluded post-regime-break-restriction for insufficient
+    # data, Burundi coffee restricted to 2007+)
     tiers = ["T0\n(price)", "T1\n(+weather)", "T3\n(+weather\n+production)"]
-    mape = [15.015, 14.533, 14.492]
-    dir_acc = [48.9, 59.4, 53.3]
+    mape = [15.239, 21.136, 23.780]
+    dir_acc = [55.5, 65.0, 59.8]
 
     fig, axes = plt.subplots(1, 2, figsize=(9, 3.6))
     axes[0].bar(tiers, mape, color=[GRAY, SKY, GREEN])
@@ -186,7 +200,7 @@ def fig_e1_tiers():
     axes[1].set_title("Directional accuracy (%)", fontweight="bold")
     axes[1].axhline(50, color=RED, ls="--", lw=1, label="coin-flip (50%)")
     axes[1].legend(frameon=False, fontsize=8)
-    fig.suptitle("E1: real forecast accuracy by evidence tier (pooled, 6 series)", fontweight="bold")
+    fig.suptitle("E1: real forecast accuracy by evidence tier (pooled, 17 series, regime-corrected)", fontweight="bold", fontsize=11)
     fig.tight_layout()
     fig.savefig(FIG_DIR / "05_e1_tiers.png", dpi=150)
     plt.close(fig)
@@ -194,8 +208,8 @@ def fig_e1_tiers():
 
 def fig_e2_calibration():
     tiers = ["T0 (price)", "T1 (price+weather)"]
-    baseline_a = [69.2, 61.5]
-    baseline_d = [73.1, 69.2]
+    baseline_a = [76.7, 71.2]
+    baseline_d = [79.5, 74.0]
 
     fig, ax = plt.subplots(figsize=(8, 4.5))
     x = np.arange(len(tiers))
@@ -206,7 +220,7 @@ def fig_e2_calibration():
     ax.set_xticks(x)
     ax.set_xticklabels(tiers)
     ax.set_ylabel("Empirical coverage (%)")
-    ax.set_title("E2: real calibration coverage\nadding weather makes both baselines worse", fontweight="bold", fontsize=11)
+    ax.set_title("E2: real calibration coverage, regime-corrected\nadding weather still hurts the naive baseline, not the calibrated one", fontweight="bold", fontsize=10)
     ax.legend(frameon=False, fontsize=8)
     ax.set_ylim(0, 100)
     fig.tight_layout()
@@ -215,14 +229,26 @@ def fig_e2_calibration():
 
 
 def fig_evidence_quality_radar():
+    # Computed live from the latest scored dataset (populate_evidence_quality.py's
+    # own output) rather than hand-typed - a hardcoded copy here is exactly what
+    # went stale for four days across this session's TZ/BI/UG/CD/5-commodity
+    # expansion, unnoticed until the project owner flagged the chart looked old.
+    dim_keys = ["availability", "quality", "relevance", "freshness", "compatibility", "provenance", "geographic_coverage"]
     dims = ["Availability", "Quality", "Relevance", "Freshness", "Compatibility", "Provenance", "Geographic\ncoverage"]
-    data = {
-        "Price": [0.58, 0.90, 1.00, 1.00, 0.90, 0.90, 0.85],
-        "Production": [0.67, 0.90, 0.90, 0.89, 0.85, 0.90, 0.85],
-        "Weather": [1.00, 0.95, 0.60, 1.00, 0.90, 0.95, 0.50],
-        "Trade": [0.25, 0.75, 0.85, 0.73, 0.50, 0.90, 0.90],
-        "Text": [0.17, 0.35, 0.50, 1.00, 0.30, 0.40, 0.55],
-    }
+    rows = json.loads(_latest("gold_standard_all_with_quality").read_text(encoding="utf-8"))
+    by_modality: dict[str, list[dict]] = {}
+    for row in rows:
+        by_modality.setdefault(row["modality"], []).append(row["evidence_quality"])
+
+    label_map = {"price": "Price", "production": "Production", "weather": "Weather", "trade": "Trade", "text": "Text"}
+    data = {}
+    for modality, label in label_map.items():
+        eq_list = by_modality.get(modality, [])
+        values = []
+        for key in dim_keys:
+            vals = [eq[key] for eq in eq_list if eq.get(key) is not None]
+            values.append(sum(vals) / len(vals) if vals else 0.0)
+        data[label] = values
     colors = {"Price": GREEN, "Production": SKY, "Weather": GOLD, "Trade": RED, "Text": GRAY}
 
     angles = np.linspace(0, 2 * np.pi, len(dims), endpoint=False).tolist()

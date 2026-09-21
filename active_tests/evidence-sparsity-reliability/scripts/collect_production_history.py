@@ -16,6 +16,17 @@ auth/element-code fixes verified this session. No writes anywhere.
 Output is a local JSON file under this experiment's own data/
 directory.
 
+UG and CD added 2026-09-21 alongside collect_price_history.py's same
+addition, completing all 8 EAC countries. Checked live before adding:
+both have full 1961-2024 QCL yield history for all three commodities,
+the same completeness as TZ/BI.
+
+Sorghum and sweet potatoes added 2026-09-21, alongside
+collect_price_history.py's same addition - see that script's docstring
+for the real coverage analysis behind the choice. Both item codes
+were already present in services/forecasting/yield_prediction.py's own
+item map, so no new lookups needed.
+
 Usage:
   python thesis-lab/active_tests/evidence-sparsity-reliability/scripts/collect_production_history.py
 """
@@ -34,8 +45,8 @@ sys.path.insert(0, str(_SCRIPT_DIR.parents[2] / "agrointel"))  # agrointel submo
 
 from provenance import DataState, GoldStandardObservation  # noqa: E402
 
-COUNTRIES = ["KE", "RW", "SS", "SO"]
-COMMODITIES = ["coffee", "maize", "tea"]
+COUNTRIES = ["KE", "RW", "SS", "SO", "TZ", "BI", "UG", "CD"]
+COMMODITIES = ["coffee", "maize", "tea", "sorghum", "sweet_potatoes"]
 
 
 async def collect_one(country: str, commodity: str) -> list[GoldStandardObservation]:

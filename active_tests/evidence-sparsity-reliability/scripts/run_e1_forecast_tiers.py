@@ -17,9 +17,16 @@ price; T1 adds year t-1's temperature and precipitation; T3 adds year
 t-1's yield on top of that. Time-ordered holdout (last ~20% of each
 series' real years), no random shuffle - a real backtest.
 
-Same 6 (country, commodity) series as before (KE/RW x coffee/maize/
-tea) - SS/SO still excluded, same reason: no real observed price to
-forecast against.
+TZ and BI added 2026-09-21 once their real price/production/weather
+histories were collected - SS/SO/UG/CD still excluded, same reason: no
+real observed price to forecast against (all four confirmed live,
+zero real FAOSTAT PP rows). TZ only has real FAOSTAT PP price
+history for maize (no coffee/tea), so it contributes one series, not
+three; the per-pair skip logic already handles that. Also applies
+`regime_break.restrict_to_latest_regime()` to every price series
+before fitting - see that module's docstring for why (a real, official
+FAOSTAT price-basis break in Burundi and Rwanda's coffee series,
+confirmed against the raw rows, unrelated to this collector).
 
 Usage:
   python thesis-lab/active_tests/evidence-sparsity-reliability/scripts/run_e1_forecast_tiers.py
@@ -40,9 +47,10 @@ _SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(_SCRIPT_DIR))
 
 from provenance import DataState  # noqa: E402
+from regime_break import restrict_to_latest_regime  # noqa: E402
 
-COUNTRIES = ["KE", "RW"]
-COMMODITIES = ["coffee", "maize", "tea"]
+COUNTRIES = ["KE", "RW", "TZ", "BI"]
+COMMODITIES = ["coffee", "maize", "tea", "sorghum", "sweet_potatoes"]
 _MIN_YEARS_FOR_SPLIT = 8
 _TIERS = ["t0_price", "t1_price_weather", "t3_price_weather_production"]
 
@@ -160,10 +168,12 @@ def main() -> None:
         precip = weather_series.get(cc, {}).get("precipitation_corrected", {})
         for comm in COMMODITIES:
             key = (cc, comm)
-            price = price_series.get(key, {})
+            price, break_year = restrict_to_latest_regime(price_series.get(key, {}))
             production = production_series.get(key, {})
-            result = run_one_series(price, temp, precip, production)
             label = f"{cc} {comm}"
+            if break_year is not None:
+                print(f"{label}: real regime break detected at {break_year} - restricting to {break_year}+ ({len(price)} years)")
+            result = run_one_series(price, temp, precip, production)
             if result is None:
                 print(f"{label}: skipped (insufficient real aligned data)")
                 continue
