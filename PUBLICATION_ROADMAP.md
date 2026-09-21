@@ -1,8 +1,11 @@
 # Publication Roadmap
 
 Maps this lab's 20 experiments to a 16-paper structure for the PhD, organized
-around the theme **"Agentic Intelligence Under Uncertainty."** Originally
-adopted 2026-09-12 from an external 12-paper roadmap proposal; revised the
+around the theme **"Agentic Intelligence Under Uncertainty"** — the same
+theme, hypothesis, objectives (O1–O3), and research questions (RQ1–RQ6) as
+[`PROPOSAL.md`](PROPOSAL.md), the source concept paper this whole lab is
+built from. Originally adopted 2026-09-12 from an external 12-paper
+roadmap proposal; revised the
 same day after a second external reorganization proposal (a 15-paper
 portfolio) was evaluated against it — merged rather than appended
 (12 + 15 ≠ 27): 3 genuinely new threads were adopted, 1 existing experiment

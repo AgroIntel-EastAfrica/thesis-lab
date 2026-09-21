@@ -15,7 +15,10 @@ controlled experiments studying how agentic AI systems should behave when
 evidence is sparse, unreliable, or heterogeneous, grounded in a real
 production agricultural-intelligence platform
 ([`agrointel`](https://github.com/AgroIntel-EastAfrica/agrointel)) rather
-than synthetic benchmarks alone.
+than synthetic benchmarks alone. Derived from Jeremiah Masaba's PhD concept
+paper, *"Agentic Agricultural Intelligence"* (Makerere University) — see
+[`PROPOSAL.md`](PROPOSAL.md) for the full source document every experiment
+here traces back to.
 
 ## Structure
 
