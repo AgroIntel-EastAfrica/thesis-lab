@@ -134,10 +134,16 @@ modalities across Kenya, Rwanda, South Sudan, and Somalia:
 | Trade | ❌ single snapshot | KE-only real data; RW/SS/SO confirmed genuine zero — quota-limited (UN Comtrade) |
 | Text/news | ❌ single snapshot | Reliability-limited (~2/12 GDELT calls succeed) — an evidence-*quality*, not *availability*, finding |
 
-Two experiments have real results so far: **E1** (forecasting under
-controlled evidence availability — adding weather measurably helped
-directional accuracy, adding production was mixed and traced to a real
-mechanism) and **E2** (calibration — a distribution-free method
-measurably beat a naive one, though the pre-registered severity
-threshold wasn't met). See the experiment's own blueprint for the full,
-continuously-updated results log.
+All four sub-experiments have now been touched: **E1** (forecasting —
+adding weather measurably helped directional accuracy; adding
+production was mixed and traced to a real mechanism), **E2**
+(calibration — a distribution-free method measurably beat a naive one,
+though adding weather made calibration *worse*), **E3** (evidence
+grounding — 5/5 real scenarios matched expected agent behavior), and
+**E4** (decision reliability — a real, ready-to-run protocol, not yet
+executed since it needs real human participants).
+
+📊 **[Read the full findings report](active_tests/evidence-sparsity-reliability/FINDINGS_REPORT.md)**
+— real charts, EDA, and results for every experiment, or see the
+experiment's own [blueprint](active_tests/evidence-sparsity-reliability/experiment_blueprint.md)
+for the complete chronological log.
