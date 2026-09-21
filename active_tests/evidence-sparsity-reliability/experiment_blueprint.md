@@ -1643,3 +1643,51 @@ category design).
 
 **Verified**: `ruff check` clean. Same time-ordered holdout and no-
 leakage discipline as every prior slice.
+
+## Experiment E3 — Evidence grounding, first real run
+
+**2026-09-21**: E1 and E2 are both forecasting-adjacent; E3 is where
+this experiment becomes genuinely agentic, per the blueprint's own
+framing. Built `scripts/run_e3_evidence_grounding.py`: a real,
+mechanical evidence-state classifier (SUFFICIENT / INSUFFICIENT /
+STALE / CONFLICTING / SEMANTICALLY_INCOMPATIBLE) and an agent-action
+selector that does *not* always answer — SUFFICIENT → recommend;
+INSUFFICIENT → retrieve, then abstain if retrieval is known exhausted;
+STALE → recommend with a caveat; CONFLICTING/SEMANTICALLY_INCOMPATIBLE
+→ investigate, then either caveat (if the conflict resolves to an
+identifiable basis difference) or abstain.
+
+**Every one of the blueprint's 5 named scenarios (A–E) is grounded in
+real data or a real, already-documented incident from this lab's own
+history — none fabricated**:
+
+| Scenario | Real grounding |
+|---|---|
+| A — Sufficient | KE coffee: real price/production/weather, all `OBSERVED_VERIFIED`, no conflict |
+| B — Insufficient | SS coffee: genuinely zero real price data, confirmed independently three times this lab |
+| C — Conflicting | The real 2026-09-17 price-source-mismatch incident (synthetic \$2,600–2,800/tonne baseline vs. real FAOSTAT \$270–280/tonne for RW/BI coffee) — already investigated and fixed this session (migration 048) |
+| D — Outdated | KE trade: real UN Comtrade data fixed at 2023, genuinely 3 years stale by 2026 and not fixable by retrying |
+| E — Semantically incompatible | KE coffee real price (\$4,886.5/tonne, a unit price) vs. real trade (\$518,720,901, a total export value) — the blueprint's own worked example, instantiated with real collected data instead of a hypothetical |
+
+**What actually happened**: all 5 scenarios' agent actions matched
+their real, historically-grounded expected action (5/5).
+
+**The honest limit of what this establishes, stated plainly rather
+than oversold**: this is a small (n=5), hand-picked evaluation of a
+*deterministic, rule-based* classifier that this same investigation
+designed — the "expected" answer for each scenario was reasoned out
+using the same logic the classifier itself implements. A 5/5 match
+demonstrates the **decision procedure is internally consistent and
+correctly implements its own stated logic** against 5 real, known
+cases. It does **not** yet demonstrate that a real LLM-driven agent
+exhibits this behavior when given the same raw evidence and asked to
+decide for itself, nor that this generalizes to novel cases the
+classifier wasn't specifically built around. That is real, necessary
+future work: wiring this decision procedure (or an LLM-based one
+tested against it as a baseline) into an actual agent loop, then
+evaluating on evidence bundles it wasn't designed with in mind.
+
+**Verified**: `ruff check` clean. Every scenario's real numeric
+grounding (KE coffee's \$4,886.5/tonne 2024 price, \$518,720,901 2023
+trade value) checked directly against the raw JSON files before being
+written into the script, not typed from memory.
