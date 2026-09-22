@@ -70,7 +70,7 @@ as the two best-covered real alternatives.
 | Production and yield | FAOSTAT Crops and Livestock Products, element 5412, MT/ha | 2,137 | 1961 to 2024 | Kenya, Rwanda, Tanzania, Burundi, Uganda, DR Congo full (5/5); South Sudan 2/5, Somalia 3/5 |
 | Weather | NASA POWER, MERRA-2 and GEOS reanalysis, temperature and precipitation | 544 | 1991 to 2024 | All eight countries, complete |
 | Trade | UN Comtrade, export flows by HS code | 12 pairs tested | 2023 | Kenya only real and nonzero; others confirmed genuine zero |
-| Text and news | GDELT news search and classification | 2 of 12 calls succeeded | Single snapshot | Limited by API reliability, not by evidence absence |
+| Text and news | GDELT + FEWS NET, news search and classification | 27 of 36 calls succeeded (GDELT 3 of 12, FEWS NET 8 of 8) | Single snapshot | GDELT limited by real API flakiness; FEWS NET added 2026-09-22 as a second, purpose-built source |
 
 Uganda and DR Congo behave like South Sudan and Somalia for price
 (zero real FAOSTAT producer price records for any commodity) but like
@@ -188,8 +188,19 @@ No modality scores well on every dimension. Weather has the best
 source quality but the worst geographic coverage, because of the
 single-point proxy. Trade has strong provenance but the weakest
 compatibility, since a total export value in dollars cannot be
-compared directly to a per-tonne price. Text scores lowest overall,
-reflecting its real reliability problem.
+compared directly to a per-tonne price. Text still scores lowest
+overall on most dimensions, but its availability climbed from 0.17 to
+0.75 on 22 September, when FEWS NET (a purpose-built food-security
+early-warning service) was added as a second real source alongside
+GDELT. GDELT alone succeeded on only 3 of 12 real fetch attempts that
+day, hit by genuine connection timeouts and rate limits; FEWS NET
+succeeded on 8 of 8, real RSS feeds fetched directly and verified live
+before being wired in. Text is still the weakest modality on every
+other dimension, since it is still a single snapshot and still relies
+on the same narrow rule-based classifier to turn raw articles into
+signals - but the availability problem specifically, which was this
+modality's most visible weakness, is now substantially real, not
+assumed away.
 
 Price, production, and weather now score near the maximum on
 availability, a real change from an earlier version of this chart,

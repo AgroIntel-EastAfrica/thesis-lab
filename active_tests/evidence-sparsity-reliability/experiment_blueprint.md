@@ -2264,3 +2264,87 @@ unchanged, as they should be.
 `populate_evidence_quality.py` and `generate_report_figures.py` end to
 end and confirmed the printed per-modality summary table matches the
 regenerated chart exactly, not just visually plausible.
+
+## Adding FEWS NET: a second real text source, not a GDELT fix (2026-09-22)
+
+Project owner asked what the best real alternative to GDELT was, after
+seeing GDELT's live run that day fetch real articles for only 3 of 12
+country/commodity pairs and extract zero real signals from any of
+them. Checked classify_article() before assuming a bug: it requires a
+commodity keyword AND a specific price-impact regex match, so an
+ordinary week's general news correctly produces nothing most of the
+time - not a bug, a real property of a rare-event classifier.
+
+Considered and rejected editing `services/intelligence/news_intelligence.py`
+directly: it is a real, shared AgroIntel production service (not
+thesis-lab's to own), and this project's own CLAUDE.md is explicit
+that the dependency between thesis-lab and agrointel runs one way.
+Built a standalone collector instead:
+[`collect_text_fews_net.py`](scripts/collect_text_fews_net.py), which
+fetches FEWS NET directly and reuses `classify_article()` read-only
+(an existing, unmodified method) so results are directly comparable to
+GDELT's.
+
+**Every URL verified live before being written into code, not
+guessed** - found `https://fews.net/feeds` via search, fetched it to
+get real per-country taxonomy-term feed URLs, then independently
+fetched 3 of the resulting 8 (Kenya, Somalia, DR Congo) directly to
+confirm real RSS 2.0 XML and read real recent titles ("Risk of Famine
+(IPC Phase 5) persists despite better-than-anticipated xagaa rains"
+for Somalia) before trusting the other 5 by the same pattern.
+
+**Real result**: 8 of 8 real fetch successes (vs. GDELT's 3 of 12 that
+same day), and real nonzero signals in 2 of 8 countries (DR Congo,
+South Sudan) that GDELT's run found none of - both tie to real
+conflict-related headlines matching the classifier's existing
+`conflict|war|insecurity` pattern, not a new rule. The other 6
+countries' real FEWS NET headlines (rainfall forecasts, IPC
+classifications) still produced zero signals, since they don't happen
+to contain a literal match for any of the 15 existing price-impact
+regexes - a real, honest partial result: FEWS NET fixes the
+*availability* problem decisively, not the separate, narrower question
+of whether the existing keyword/regex classifier is expressive enough
+to read IPC-report language.
+
+Scoped to coffee/maize/tea (not this project's full 5-commodity set):
+sorghum has real keyword support in `COMMODITY_KEYWORDS`, sweet
+potatoes does not, and passing an unsupported name silently degrades
+every match to the generic "general" bucket instead of erroring -
+producing real but misleading per-commodity numbers. Left out rather
+than silently mislabeled.
+
+**A second, real filename-matching bug found while wiring this in** -
+the third occurrence of the same class of bug this session.
+`populate_evidence_quality.py`'s `_history`-aware regex (from the
+prior slice) still couldn't match `gold_standard_text_fews_net_*.json`,
+since `[a-z]+?` cannot span the underscore in `text_fews_net`. Rather
+than patch the suffix pattern a third time, switched to an explicit
+list of the 5 known real modality names with any `_[a-z_]+` suffix
+absorbed - covers every filename shape used so far, and any future one
+using a real modality name, without a fourth narrow regex change.
+
+**A second, separate real design issue, caught before it caused a
+silent data loss**: GDELT and FEWS NET are independent real sources
+for the same modality, not successive re-collections of the same
+thing - unlike every other modality's "keep only the latest file"
+convention, which is correct precisely because a newer run there does
+supersede an older one. Letting "latest wins" pick whichever collector
+ran most recently would have silently dropped the other source's real
+results. Built
+[`merge_text_sources.py`](scripts/merge_text_sources.py) to combine
+GDELT's and FEWS NET's latest real files into one before
+`populate_evidence_quality.py` runs, so both sources are counted.
+
+**Real results after both fixes**: text's availability score rose from
+0.17 to 0.75 (27 of 36 real observations now verified, vs. the
+original 2 of 12) - the modality's most visible weakness is now
+substantially addressed, though text remains the weakest modality on
+every other quality dimension, and still a single snapshot rather than
+a real time series.
+
+**Verified**: `ruff check` clean on `collect_text_fews_net.py`,
+`merge_text_sources.py`, and the re-edited
+`populate_evidence_quality.py`. All 3 new/edited scripts run live
+end to end; `generate_report_figures.py` re-run and the radar chart's
+Text line confirmed to have moved out on Availability specifically,
+matching the printed summary table exactly.

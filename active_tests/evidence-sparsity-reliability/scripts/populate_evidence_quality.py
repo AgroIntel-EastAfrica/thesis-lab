@@ -33,6 +33,22 @@ than the old singles) while correctly still picking trade/text's own
 files (no `_history` variant exists for those two - they remain real
 single snapshots).
 
+**Widened again 2026-09-22** when `collect_text_fews_net.py` added a
+second, independent real text source (FEWS NET, alongside the existing
+GDELT-based collect_text.py): a fourth filename shape,
+`gold_standard_text_fews_net_*.json`, hit the exact same class of bug
+the `_history` fix above addressed, since `[a-z]+?` cannot span the
+underscore in `text_fews_net`. Rather than patch the suffix pattern a
+third time, switched to an explicit list of the 5 known real
+modalities (`price|production|weather|trade|text`) with any
+`_[a-z_]+` suffix absorbed - covers every filename shape used so far
+and any future one using a real modality name, without another
+narrow, one-off regex change. Note: GDELT and FEWS NET are genuinely
+different sources for the same modality, not successive re-collections
+of the same thing, so merge_text_sources.py combines their latest
+files into one before this script runs, rather than letting "latest
+wins" silently drop one source's real results.
+
 Usage:
   python thesis-lab/active_tests/evidence-sparsity-reliability/scripts/populate_evidence_quality.py
 """
@@ -53,7 +69,7 @@ sys.path.insert(0, str(_SCRIPT_DIR.parents[2] / "agrointel"))  # agrointel submo
 from evidence_quality_rubric import score_observation  # noqa: E402
 from provenance import GoldStandardObservation  # noqa: E402
 
-_FILENAME_RE = re.compile(r"^gold_standard_(?P<modality>[a-z]+?)(?:_history)?_(?P<ts>\d{8}_\d{6})\.json$")
+_FILENAME_RE = re.compile(r"^gold_standard_(?P<modality>price|production|weather|trade|text)(?:_[a-z_]+?)?_(?P<ts>\d{8}_\d{6})\.json$")
 
 
 def latest_file_per_modality(data_dir: Path) -> dict[str, Path]:
